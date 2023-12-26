@@ -1,6 +1,13 @@
 package udp
 
 import (
+	"fmt"
+	"log"
+	"math/rand"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/mgranderath/traceroute/listener_channel"
@@ -10,14 +17,12 @@ import (
 	"github.com/mgranderath/traceroute/signal"
 	"github.com/mgranderath/traceroute/taskgroup"
 	"github.com/mgranderath/traceroute/util"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
-	"log"
-	"math/rand"
-	"net"
-	"sync"
-	time "time"
 )
 
 type inflightData struct {
@@ -113,7 +118,21 @@ func (tr *Traceroute) getUDPConn(try int) (net.IP, int, net.PacketConn) {
 	return srcIP, udpConn.LocalAddr().(*net.UDPAddr).Port, udpConn
 }
 
-func (tr *Traceroute) sendMessage(ttl uint16) {
+func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
+	_, childSpan := tr.trcrtConfig.Tracer.Start(
+		parentctx,
+		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
+		trace.WithAttributes(
+			attribute.String("source", tr.trcrtConfig.LocalHostname),
+			attribute.String("destination_hostname", tr.trcrtConfig.DestinationHostname),
+			attribute.Int64("max_ttl", int64(tr.trcrtConfig.MaxHops)),
+			attribute.String("protocol", "udp"),
+			attribute.String("xid", tr.trcrtConfig.Xid.String()),
+		),
+		trace.WithSpanKind(trace.SpanKindClient),
+	)
+	defer childSpan.End()
+
 	srcIP, srcPort, udpConn := tr.getUDPConn(0)
 
 	var payload []byte
@@ -191,6 +210,13 @@ func (tr *Traceroute) sendMessage(ttl uint16) {
 			TTL:     ttl,
 			RTT:     &rtt,
 		})
+		childSpan.SetAttributes(
+			attribute.String("hop", peer.String()),
+			attribute.String("rtt", rtt.String()),
+			attribute.Int64("ttl", int64(ttl)),
+		)
+		childSpan.SetStatus(codes.Ok, "success")
+
 	case peer := <-udpMsg:
 		rtt := time.Since(start)
 		ip := peer.(*net.UDPAddr).IP
@@ -203,6 +229,12 @@ func (tr *Traceroute) sendMessage(ttl uint16) {
 			TTL:     ttl,
 			RTT:     &rtt,
 		})
+		childSpan.SetAttributes(
+			attribute.String("hop", ip.String()),
+			attribute.String("rtt", rtt.String()),
+			attribute.Int64("ttl", int64(ttl)))
+		childSpan.SetStatus(codes.Ok, "success")
+
 	case <-time.After(tr.trcrtConfig.Timeout):
 		tr.addToResult(ttl, methods.TracerouteHop{
 			Success: false,
@@ -210,6 +242,12 @@ func (tr *Traceroute) sendMessage(ttl uint16) {
 			TTL:     ttl,
 			RTT:     nil,
 		})
+		childSpan.SetAttributes(
+			attribute.String("hop", "null"),
+			attribute.String("rtt", ""),
+			attribute.Int64("ttl", int64(ttl)),
+		)
+		childSpan.SetStatus(codes.Error, "failure")
 	}
 
 	tr.results.inflightRequests.Delete(uint16(srcPort))
@@ -266,8 +304,8 @@ func (tr *Traceroute) icmpListener() {
 	}
 }
 
-func (tr *Traceroute) sendLoop() {
-	rand.Seed(time.Now().UTC().UnixNano())
+func (tr *Traceroute) sendLoop(parentctx context.Context) {
+	rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 
 	for ttl := uint16(1); ttl <= tr.trcrtConfig.MaxHops; ttl++ {
 		select {
@@ -281,19 +319,33 @@ func (tr *Traceroute) sendLoop() {
 				return
 			case <-tr.results.concurrentRequests.Start():
 				tr.opConfig.wg.Add()
-				go tr.sendMessage(ttl)
+				go tr.sendMessage(parentctx, ttl)
 			}
 		}
 	}
 }
 
 func (tr *Traceroute) start() (*map[uint16][]methods.TracerouteHop, error) {
+	parentctx, parentSpan := tr.trcrtConfig.Tracer.Start(
+		tr.trcrtConfig.TraceCtx,
+		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
+		trace.WithAttributes(
+			attribute.String("source", tr.trcrtConfig.LocalHostname),
+			attribute.String("destination_hostname", tr.trcrtConfig.DestinationHostname),
+			attribute.Int64("max_ttl", int64(tr.trcrtConfig.MaxHops)),
+			attribute.String("protocol", "udp"),
+			attribute.String("xid", tr.trcrtConfig.Xid.String()),
+		),
+		trace.WithSpanKind(trace.SpanKindClient),
+	)
+	defer parentSpan.End()
+
 	go tr.icmpListener()
 
 	wg := taskgroup.New()
 	tr.opConfig.wg = wg
 
-	tr.sendLoop()
+	tr.sendLoop(parentctx)
 
 	wg.Wait()
 
@@ -301,10 +353,12 @@ func (tr *Traceroute) start() (*map[uint16][]methods.TracerouteHop, error) {
 	tr.opConfig.icmpConn.Close()
 
 	if tr.results.err != nil {
+		parentSpan.SetStatus(codes.Error, fmt.Sprintf("%s", tr.results.err))
 		return nil, tr.results.err
 	}
 
 	result := methods.ReduceFinalResult(tr.results.results, tr.trcrtConfig.MaxHops, tr.opConfig.destIP)
+	parentSpan.SetStatus(codes.Ok, "success")
 
 	return &result, tr.results.err
 }
