@@ -18,6 +18,7 @@ import (
 	"github.com/mgranderath/traceroute/taskgroup"
 	"github.com/mgranderath/traceroute/util"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
 	"golang.org/x/net/icmp"
@@ -121,8 +122,13 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 	_, childSpan := tr.trcrtConfig.Tracer.Start(
 		parentctx,
 		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
-		trace.WithAttributes(attribute.String("xid", tr.trcrtConfig.Xid.String())),
-		trace.WithAttributes(attribute.Int64("ttl", int64(ttl))),
+		trace.WithAttributes(attribute.String("xid", tr.trcrtConfig.Xid.String()),
+			attribute.Int64("TTL", int64(tr.trcrtConfig.MaxHops)),
+			attribute.String("source", tr.trcrtConfig.LocalHostname),
+			attribute.String("destination", tr.opConfig.destIP.String()),
+			attribute.String("protocol", "udp"),
+		),
+		trace.WithSpanKind(trace.SpanKindClient),
 	)
 	defer childSpan.End()
 
@@ -204,8 +210,8 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 			RTT:     &rtt,
 		})
 		childSpan.SetAttributes(attribute.String("peer", peer.String()))
-		childSpan.SetAttributes(attribute.Bool("success", true))
 		childSpan.SetAttributes(attribute.String("rtt", rtt.String()))
+		childSpan.SetStatus(codes.Ok, "success")
 
 	case peer := <-udpMsg:
 		rtt := time.Since(start)
@@ -220,8 +226,8 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 			RTT:     &rtt,
 		})
 		childSpan.SetAttributes(attribute.String("peer", ip.String()))
-		childSpan.SetAttributes(attribute.Bool("success", true))
 		childSpan.SetAttributes(attribute.String("rtt", rtt.String()))
+		childSpan.SetStatus(codes.Ok, "success")
 
 	case <-time.After(tr.trcrtConfig.Timeout):
 		tr.addToResult(ttl, methods.TracerouteHop{
@@ -231,8 +237,8 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 			RTT:     nil,
 		})
 		childSpan.SetAttributes(attribute.String("peer", ""))
-		childSpan.SetAttributes(attribute.Bool("success", false))
 		childSpan.SetAttributes(attribute.String("rtt", ""))
+		childSpan.SetStatus(codes.Error, "failure")
 	}
 
 	tr.results.inflightRequests.Delete(uint16(srcPort))
@@ -314,7 +320,13 @@ func (tr *Traceroute) start() (*map[uint16][]methods.TracerouteHop, error) {
 	parentctx, parentSpan := tr.trcrtConfig.Tracer.Start(
 		tr.trcrtConfig.TraceCtx,
 		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
-		trace.WithAttributes(attribute.String("xid", tr.trcrtConfig.Xid.String())),
+		trace.WithAttributes(attribute.String("xid", tr.trcrtConfig.Xid.String()),
+			attribute.Int64("TTL", int64(tr.trcrtConfig.MaxHops)),
+			attribute.String("source", tr.trcrtConfig.LocalHostname),
+			attribute.String("destination", tr.opConfig.destIP.String()),
+			attribute.String("protocol", "udp"),
+		),
+		trace.WithSpanKind(trace.SpanKindClient),
 	)
 	defer parentSpan.End()
 
@@ -331,10 +343,12 @@ func (tr *Traceroute) start() (*map[uint16][]methods.TracerouteHop, error) {
 	tr.opConfig.icmpConn.Close()
 
 	if tr.results.err != nil {
+		parentSpan.SetStatus(codes.Error, fmt.Sprintf("%s", tr.results.err))
 		return nil, tr.results.err
 	}
 
 	result := methods.ReduceFinalResult(tr.results.results, tr.trcrtConfig.MaxHops, tr.opConfig.destIP)
+	parentSpan.SetStatus(codes.Ok, "success")
 
 	return &result, tr.results.err
 }

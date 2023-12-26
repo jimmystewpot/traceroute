@@ -12,6 +12,7 @@ import (
 	"github.com/mgranderath/traceroute/methods"
 	"github.com/mgranderath/traceroute/methods/tcp"
 	"github.com/mgranderath/traceroute/methods/udp"
+	"github.com/rs/xid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -35,9 +36,10 @@ type TraceOtelConfig struct {
 	ParallelRequests         uint16        `help:"Set maximum number of parallel requests in flight" short:"N" default:"16"`
 	Timeout                  time.Duration `help:"Set a timeout" short:"w" default:"2s"`
 	TraceRoutePort           int           `help:"Set the port on which to traceroute" short:"p" default:"33434"`
-	OpenTelemetryDestination string        `required:"" help:"OpenTelemetry destination to upload otel traces to"`
-	OpenTelemetryPort        int           `help:"OpenTelemetry destination port to send traces to" default:"443"`
-	OpenTelemetryGRPC        bool          `help:"OpenTelemetry uses GPRC protocol" default:"false"`
+	OpenTelemetryDestination string        `required:"" help:"OpenTelemetry destination to upload otel traces to" name:"otel-dest" default:"localhost"`
+	OpenTelemetryTLS         bool          `help:"OpenTelemetry destination requires TLS" name:"otel-tls" default:"false"`
+	OpenTelemetryGRPC        bool          `help:"OpenTelemetry uses GPRC protocol" name:"otel-grpc" default:"true"`
+	OpenTelemetryPort        int           `help:"OpenTelemetry destination port to send traces to" name:"otel-port" default:"4317"`
 	Destination              string        `required:"" help:"IP or Hostname address to traceroute to" default:"google.com"`
 	hostname                 string
 }
@@ -70,6 +72,7 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 		Timeout:          toc.Timeout,
 		Tracer:           otel.Tracer(fmt.Sprintf("%s/traceroute", toc.hostname)),
 		TraceCtx:         context.Background(),
+		Xid:              xid.New(),
 	}
 
 	switch kongctx.Command() {
@@ -148,7 +151,11 @@ func (toc *TraceOtelConfig) initTraceProvider(timeout time.Duration) (func(), er
 
 	return func() {
 		// Shutdown will flush any remaining spans and shut down the exporter.
-		fmt.Printf("failed to shutdown TracerProvider: %s", tracerProvider.Shutdown(ctx))
+		fmt.Printf("flushing TracerProvider")
+		err := tracerProvider.Shutdown(ctx)
+		if err != nil {
+			fmt.Printf("error flushing TracerProvider: %s", err)
+		}
 		cancel()
 	}, nil
 }
