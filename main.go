@@ -12,47 +12,67 @@ import (
 	"github.com/mgranderath/traceroute/methods"
 	"github.com/mgranderath/traceroute/methods/tcp"
 	"github.com/mgranderath/traceroute/methods/udp"
-	"github.com/rs/xid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var cli struct {
-	Udp TraceConfig `cmd:"" help:"UDP traceroute."`
-	Tcp TraceConfig `cmd:"" help:"TCP traceroute"`
+	Udp TraceOtelConfig `cmd:"" help:"UDP traceroute."`
+	Tcp TraceOtelConfig `cmd:"" help:"TCP traceroute"`
 }
 
-type TraceConfig struct {
+type TraceOtelConfig struct {
 	MaxHops                  uint16        `help:"Set the maximum hops for the traceroute" short:"m" default:"30"`
 	NQueries                 uint16        `help:"Set the number of probes per hop to send" short:"q" default:"3"`
 	ParallelRequests         uint16        `help:"Set maximum number of parallel requests in flight" short:"N" default:"16"`
 	Timeout                  time.Duration `help:"Set a timeout" short:"w" default:"2s"`
 	TraceRoutePort           int           `help:"Set the port on which to traceroute" short:"p" default:"33434"`
 	OpenTelemetryDestination string        `required:"" help:"OpenTelemetry destination to upload otel traces to"`
+	OpenTelemetryPort        int           `help:"OpenTelemetry destination port to send traces to" default:"443"`
+	OpenTelemetryGRPC        bool          `help:"OpenTelemetry uses GPRC protocol" default:"false"`
 	Destination              string        `required:"" help:"IP or Hostname address to traceroute to" default:"google.com"`
+	hostname                 string
 }
 
-type TraceResults struct {
-	Success bool
-	Address string
-	TTL     uint16
-	RTT     *time.Duration
-}
-
-func (t *TraceConfig) Run(ctx *kong.Context) error {
-	destinations, err := parseDestination(t.Destination)
+func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
+	var err error
+	toc.hostname, err = os.Hostname()
 	if err != nil {
 		return err
 	}
-	cfg := methods.TracerouteConfig{
-		MaxHops:          t.MaxHops,
-		NumMeasurements:  3,
-		ParallelRequests: t.ParallelRequests,
-		Port:             t.TraceRoutePort,
-		Timeout:          t.Timeout,
+
+	destinations, err := parseDestination(toc.Destination)
+	if err != nil {
+		return err
 	}
-	switch ctx.Command() {
+
+	// exportTrace will export the spans when the tool quits.
+	exportTrace, err := toc.initTraceProvider(toc.Timeout)
+	if err != nil {
+		return err
+	}
+	defer exportTrace()
+
+	cfg := methods.TracerouteConfig{
+		LocalHostname:    toc.hostname,
+		MaxHops:          toc.MaxHops,
+		NumMeasurements:  3,
+		ParallelRequests: toc.ParallelRequests,
+		Port:             toc.TraceRoutePort,
+		Timeout:          toc.Timeout,
+		Tracer:           otel.Tracer(fmt.Sprintf("%s/traceroute", toc.hostname)),
+		TraceCtx:         context.Background(),
+	}
+
+	switch kongctx.Command() {
 	case "tcp":
 		for i := 0; i < len(destinations); i++ {
 			tcpTraceroute := tcp.New(destinations[i], cfg)
@@ -73,48 +93,64 @@ func (t *TraceConfig) Run(ctx *kong.Context) error {
 			printResults(res)
 		}
 	default:
-		return fmt.Errorf("error command %s not understood", ctx.Command())
+		return fmt.Errorf("error command %s not understood", kongctx.Command())
 	}
 	return nil
 }
 
-func (t *TraceConfig) SendTrace(res *map[uint16][]methods.TracerouteHop) error {
-	hostname, err := os.Hostname()
-	parentId := xid.New().String()
-	if err != nil {
-		return err
-	}
-	tracer := otel.Tracer(hostname)
-	ctx := context.Background()
-	ctx, parent := tracer.Start(
-		ctx,
-		parentId,
-		trace.WithAttributes(
-			attribute.String("hostname", hostname),
-			attribute.String("destination", t.Destination),
+// initTraceProvider is instantiated early and then run as the final function to export the trace.
+func (toc *TraceOtelConfig) initTraceProvider(timeout time.Duration) (func(), error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceNameKey.String(fmt.Sprintf("%s/traceroute", toc.hostname)),
+			attribute.String("application", "otel-distributed-network-traceroute"),
 		),
 	)
+	if err != nil {
+		cancel()
+		return func() {}, err
+	}
+	var exporter *otlptrace.Exporter
+	dst := net.JoinHostPort(toc.OpenTelemetryDestination, fmt.Sprintf("%d", toc.OpenTelemetryPort))
 
-	for i := uint16(0); i < uint16(len(*res)); i++ {
-		if val, ok := (*res)[i]; ok {
-			tr := checkNilResult((*res)[i])
-			spanName := fmt.Sprintf("hop-%d", i)
-			ctx, childSpan := tracer.Start(
-				ctx,
-				spanName,
-				trace.WithAttributes(
-					attribute.String("hostname", hostname),
-					attribute.String("destination", t.Destination),
-					attribute.Bool("success", tr[0].Success),
-				),
-			)
-			for _, probes := range tr {
-				childSpan.AddEvent(probes.Address)
-			}
+	switch toc.OpenTelemetryGRPC {
+	case true:
+		// GRPC Destination Configuration for the exporter
+		conn, err := grpc.DialContext(ctx, dst, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		if err != nil {
+			cancel()
+			return func() {}, err
+		}
 
+		exporter, err = otlptracegrpc.New(ctx, otlptracegrpc.WithGRPCConn(conn))
+		if err != nil {
+			cancel()
+			return func() {}, err
+		}
+	case false:
+		// HTTP Destination configuration for the exporter
+		exporter, err = otlptracehttp.New(ctx)
+		if err != nil {
+			cancel()
+			return func() {}, err
 		}
 	}
-	return nil
+
+	batchSpanProcessor := sdktrace.NewBatchSpanProcessor(exporter)
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithResource(res),
+		sdktrace.WithSpanProcessor(batchSpanProcessor),
+	)
+	otel.SetTracerProvider(tracerProvider)
+
+	return func() {
+		// Shutdown will flush any remaining spans and shut down the exporter.
+		fmt.Printf("failed to shutdown TracerProvider: %s", tracerProvider.Shutdown(ctx))
+		cancel()
+	}, nil
 }
 
 // printResults will print out the results line by line for easy reading.
@@ -147,24 +183,6 @@ func parseDestination(destination string) ([]net.IP, error) {
 		}
 	}
 	return results, nil
-}
-
-func checkNilResult(results []methods.TracerouteHop) []TraceResults {
-	tr := make([]TraceResults, 0)
-	for _, hop := range results {
-		t := TraceResults{
-			RTT:     hop.RTT,
-			Success: hop.Success,
-			TTL:     hop.TTL,
-		}
-		if hop.Address == nil {
-			t.Address = "Null"
-		} else {
-			t.Address = hop.Address.String()
-		}
-		tr = append(tr, t)
-	}
-	return tr
 }
 
 func main() {

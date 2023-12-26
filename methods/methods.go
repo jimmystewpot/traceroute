@@ -1,11 +1,13 @@
 package methods
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"net"
 	"time"
 
+	"github.com/rs/xid"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -18,13 +20,16 @@ type TracerouteHop struct {
 }
 
 type TracerouteConfig struct {
+	LocalHostname    string
 	MaxHops          uint16
 	NumMeasurements  uint16
 	ParallelRequests uint16
-
-	Port    int
-	Timeout time.Duration
-	Tp      trace.TracerProvider
+	Port             int
+	Timeout          time.Duration
+	// added to support otel tracing.
+	Tracer   trace.Tracer
+	TraceCtx context.Context
+	Xid      xid.ID
 }
 
 func GetIPHeaderLength(data []byte) (int, error) {
