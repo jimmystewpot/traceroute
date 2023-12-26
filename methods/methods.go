@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // TracerouteHop type
@@ -22,6 +24,7 @@ type TracerouteConfig struct {
 
 	Port    int
 	Timeout time.Duration
+	Tp      trace.TracerProvider
 }
 
 func GetIPHeaderLength(data []byte) (int, error) {

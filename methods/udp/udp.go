@@ -1,6 +1,12 @@
 package udp
 
 import (
+	"log"
+	"math/rand"
+	"net"
+	"sync"
+	time "time"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/mgranderath/traceroute/listener_channel"
@@ -10,14 +16,10 @@ import (
 	"github.com/mgranderath/traceroute/signal"
 	"github.com/mgranderath/traceroute/taskgroup"
 	"github.com/mgranderath/traceroute/util"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
-	"log"
-	"math/rand"
-	"net"
-	"sync"
-	time "time"
 )
 
 type inflightData struct {
@@ -50,6 +52,7 @@ type Traceroute struct {
 	trcrtConfig methods.TracerouteConfig
 	opConfig    opConfig
 	results     results
+	tp          trace.TracerProvider
 }
 
 func New(destIP net.IP, quic bool, config methods.TracerouteConfig) *Traceroute {
@@ -59,6 +62,7 @@ func New(destIP net.IP, quic bool, config methods.TracerouteConfig) *Traceroute 
 			destIP: destIP,
 		},
 		trcrtConfig: config,
+		tp:          config.Tp,
 	}
 }
 
@@ -267,8 +271,7 @@ func (tr *Traceroute) icmpListener() {
 }
 
 func (tr *Traceroute) sendLoop() {
-	rand.Seed(time.Now().UTC().UnixNano())
-
+	rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 	for ttl := uint16(1); ttl <= tr.trcrtConfig.MaxHops; ttl++ {
 		select {
 		case <-tr.results.reachedFinalHop.Chan():
