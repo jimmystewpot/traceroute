@@ -20,12 +20,13 @@ type TracerouteHop struct {
 }
 
 type TracerouteConfig struct {
-	LocalHostname    string
-	MaxHops          uint16
-	NumMeasurements  uint16
-	ParallelRequests uint16
-	Port             int
-	Timeout          time.Duration
+	LocalHostname       string
+	DestinationHostname string
+	MaxHops             uint16
+	NumMeasurements     uint16
+	ParallelRequests    uint16
+	Port                int
+	Timeout             time.Duration
 	// added to support otel tracing.
 	Tracer   trace.Tracer
 	TraceCtx context.Context

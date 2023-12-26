@@ -122,11 +122,12 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 	_, childSpan := tr.trcrtConfig.Tracer.Start(
 		parentctx,
 		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
-		trace.WithAttributes(attribute.String("xid", tr.trcrtConfig.Xid.String()),
-			attribute.Int64("TTL", int64(tr.trcrtConfig.MaxHops)),
+		trace.WithAttributes(
 			attribute.String("source", tr.trcrtConfig.LocalHostname),
-			attribute.String("destination", tr.opConfig.destIP.String()),
+			attribute.String("destination_hostname", tr.trcrtConfig.DestinationHostname),
+			attribute.Int64("max_ttl", int64(tr.trcrtConfig.MaxHops)),
 			attribute.String("protocol", "udp"),
+			attribute.String("xid", tr.trcrtConfig.Xid.String()),
 		),
 		trace.WithSpanKind(trace.SpanKindClient),
 	)
@@ -209,8 +210,11 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 			TTL:     ttl,
 			RTT:     &rtt,
 		})
-		childSpan.SetAttributes(attribute.String("peer", peer.String()))
-		childSpan.SetAttributes(attribute.String("rtt", rtt.String()))
+		childSpan.SetAttributes(
+			attribute.String("hop", peer.String()),
+			attribute.String("rtt", rtt.String()),
+			attribute.Int64("ttl", int64(ttl)),
+		)
 		childSpan.SetStatus(codes.Ok, "success")
 
 	case peer := <-udpMsg:
@@ -225,8 +229,10 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 			TTL:     ttl,
 			RTT:     &rtt,
 		})
-		childSpan.SetAttributes(attribute.String("peer", ip.String()))
-		childSpan.SetAttributes(attribute.String("rtt", rtt.String()))
+		childSpan.SetAttributes(
+			attribute.String("hop", ip.String()),
+			attribute.String("rtt", rtt.String()),
+			attribute.Int64("ttl", int64(ttl)))
 		childSpan.SetStatus(codes.Ok, "success")
 
 	case <-time.After(tr.trcrtConfig.Timeout):
@@ -236,8 +242,11 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 			TTL:     ttl,
 			RTT:     nil,
 		})
-		childSpan.SetAttributes(attribute.String("peer", ""))
-		childSpan.SetAttributes(attribute.String("rtt", ""))
+		childSpan.SetAttributes(
+			attribute.String("hop", "null"),
+			attribute.String("rtt", ""),
+			attribute.Int64("ttl", int64(ttl)),
+		)
 		childSpan.SetStatus(codes.Error, "failure")
 	}
 
@@ -320,11 +329,12 @@ func (tr *Traceroute) start() (*map[uint16][]methods.TracerouteHop, error) {
 	parentctx, parentSpan := tr.trcrtConfig.Tracer.Start(
 		tr.trcrtConfig.TraceCtx,
 		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
-		trace.WithAttributes(attribute.String("xid", tr.trcrtConfig.Xid.String()),
-			attribute.Int64("TTL", int64(tr.trcrtConfig.MaxHops)),
+		trace.WithAttributes(
 			attribute.String("source", tr.trcrtConfig.LocalHostname),
-			attribute.String("destination", tr.opConfig.destIP.String()),
+			attribute.String("destination_hostname", tr.trcrtConfig.DestinationHostname),
+			attribute.Int64("max_ttl", int64(tr.trcrtConfig.MaxHops)),
 			attribute.String("protocol", "udp"),
+			attribute.String("xid", tr.trcrtConfig.Xid.String()),
 		),
 		trace.WithSpanKind(trace.SpanKindClient),
 	)

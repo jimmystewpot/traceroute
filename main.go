@@ -15,6 +15,7 @@ import (
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -62,17 +63,24 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 		return err
 	}
 	defer exportTrace()
+	ctx := context.Background()
+	// ctx is reset with the baggage added.
+	ctx, err = toc.initBaggage(ctx)
+	if err != nil {
+		return err
+	}
 
 	cfg := methods.TracerouteConfig{
-		LocalHostname:    toc.hostname,
-		MaxHops:          toc.MaxHops,
-		NumMeasurements:  3,
-		ParallelRequests: toc.ParallelRequests,
-		Port:             toc.TraceRoutePort,
-		Timeout:          toc.Timeout,
-		Tracer:           otel.Tracer(fmt.Sprintf("%s/traceroute", toc.hostname)),
-		TraceCtx:         context.Background(),
-		Xid:              xid.New(),
+		DestinationHostname: toc.Destination,
+		LocalHostname:       toc.hostname,
+		MaxHops:             toc.MaxHops,
+		NumMeasurements:     3,
+		ParallelRequests:    toc.ParallelRequests,
+		Port:                toc.TraceRoutePort,
+		Timeout:             toc.Timeout,
+		Tracer:              otel.Tracer(fmt.Sprintf("%s/traceroute", toc.hostname)),
+		Xid:                 xid.New(),
+		TraceCtx:            ctx,
 	}
 
 	switch kongctx.Command() {
@@ -99,6 +107,42 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 		return fmt.Errorf("error command %s not understood", kongctx.Command())
 	}
 	return nil
+}
+
+// initBaggage will include the attributes globally for all spans. This works on some
+// otel recivers but not all.
+func (toc *TraceOtelConfig) initBaggage(ctx context.Context) (context.Context, error) {
+	bag := baggage.FromContext(ctx)
+	// set the global destination hostname for the traceroutes to be included in all spans.
+	dest, err := baggage.NewMember("destination_hostnane", toc.Destination)
+	if err != nil {
+		return ctx, err
+	}
+	bag, _ = bag.SetMember(dest)
+
+	// set the source hostname for all traceroutes to be included in all spans.
+	src, err := baggage.NewMember("source", toc.hostname)
+	if err != nil {
+		return ctx, err
+	}
+	bag, _ = bag.SetMember(src)
+
+	// set the MAX TTL for all traceroutes to be included in all spans
+	maxTTL, err := baggage.NewMember("max_hops", fmt.Sprintf("%d", toc.MaxHops))
+	if err != nil {
+		return ctx, err
+	}
+	bag, _ = bag.SetMember(maxTTL)
+
+	// set additional entropy using xid for rebuilding spans if required
+	id := xid.New()
+	xid, err := baggage.NewMember("xid", id.String())
+	if err != nil {
+		return ctx, err
+	}
+	bag, _ = bag.SetMember(xid)
+
+	return baggage.ContextWithBaggage(ctx, bag), nil
 }
 
 // initTraceProvider is instantiated early and then run as the final function to export the trace.
