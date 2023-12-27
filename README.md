@@ -47,6 +47,7 @@ Flags:
       --otel-grpc                 OpenTelemetry uses GPRC protocol ($TRACE_OTEL_GRPC)
       --otel-port=4317            OpenTelemetry destination port to send traces to ($TRACE_OTEL_PORT)
       --destination=STRING        IP or Hostname address to traceroute to ($TRACE_DESTINATION)
+      --print-results             Print the results to stdout, this is not recommended if running in docker ($TRACE_STDOUT)
 
 ```
 ### tcp traceroute
@@ -69,6 +70,7 @@ Flags:
       --otel-grpc                 OpenTelemetry uses GPRC protocol ($TRACE_OTEL_GRPC)
       --otel-port=4317            OpenTelemetry destination port to send traces to ($TRACE_OTEL_PORT)
       --destination=STRING        IP or Hostname address to traceroute to ($TRACE_DESTINATION)
+      --print-results             Print the results to stdout, this is not recommended if running in docker ($TRACE_STDOUT)
 
 ```
 

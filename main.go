@@ -42,6 +42,7 @@ type TraceOtelConfig struct {
 	OpenTelemetryGRPC        bool          `help:"OpenTelemetry uses GPRC protocol" name:"otel-grpc" default:"true" env:"TRACE_OTEL_GRPC"`
 	OpenTelemetryPort        int           `help:"OpenTelemetry destination port to send traces to" name:"otel-port" default:"4317" env:"TRACE_OTEL_PORT"`
 	Destination              string        `required:"" help:"IP or Hostname address to traceroute to" env:"TRACE_DESTINATION"`
+	PrintResults             bool          `required:"" help:"Print the results to stdout, this is not recommended if running in docker" default:"false" env:"TRACE_STDOUT"`
 	hostname                 string
 }
 
@@ -91,7 +92,9 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 			if err != nil {
 				return err
 			}
-			printResults(res)
+			if toc.PrintResults {
+				printResults(res)
+			}
 		}
 
 	case "udp":
@@ -101,7 +104,9 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 			if err != nil {
 				return err
 			}
-			printResults(res)
+			if toc.PrintResults {
+				printResults(res)
+			}
 		}
 	default:
 		return fmt.Errorf("error command %s not understood", kongctx.Command())
