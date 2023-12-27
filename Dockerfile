@@ -14,4 +14,4 @@ WORKDIR /
 
 COPY --from=BuildStage /usr/local/bin/traceroute /traceroute
 
-ENTRYPOINT [ "/traceroute udp" ]
+ENTRYPOINT [ "/traceroute", "udp" ]
