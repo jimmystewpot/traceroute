@@ -32,16 +32,16 @@ var cli struct {
 }
 
 type TraceOtelConfig struct {
-	MaxHops                  uint16        `help:"Set the maximum hops for the traceroute" short:"m" default:"30"`
-	NQueries                 uint16        `help:"Set the number of probes per hop to send" short:"q" default:"3"`
-	ParallelRequests         uint16        `help:"Set maximum number of parallel requests in flight" short:"N" default:"16"`
-	Timeout                  time.Duration `help:"Set a timeout" short:"w" default:"2s"`
-	TraceRoutePort           int           `help:"Set the port on which to traceroute" short:"p" default:"33434"`
-	OpenTelemetryDestination string        `required:"" help:"OpenTelemetry destination to upload otel traces to" name:"otel-dest" default:"localhost"`
-	OpenTelemetryTLS         bool          `help:"OpenTelemetry destination requires TLS" name:"otel-tls" default:"false"`
-	OpenTelemetryGRPC        bool          `help:"OpenTelemetry uses GPRC protocol" name:"otel-grpc" default:"true"`
-	OpenTelemetryPort        int           `help:"OpenTelemetry destination port to send traces to" name:"otel-port" default:"4317"`
-	Destination              string        `required:"" help:"IP or Hostname address to traceroute to" default:"google.com"`
+	MaxHops                  uint16        `help:"Set the maximum hops for the traceroute" short:"m" default:"30" env:"TRACE_MAXHOPS"`
+	NQueries                 uint16        `help:"Set the number of probes per hop to send" short:"q" default:"3" env:"TRACE_NQUERIES"`
+	ParallelRequests         uint16        `help:"Set maximum number of parallel requests in flight" short:"N" default:"16" env:"TRACE_PARALLEL"`
+	Timeout                  time.Duration `help:"Set a timeout" short:"w" default:"2s" env:"TRACE_TIMEOUT"`
+	TraceRoutePort           int           `help:"Set the port on which to traceroute" short:"p" default:"33434" env:"TRACE_SRC_PORT"`
+	OpenTelemetryDestination string        `required:"" help:"OpenTelemetry destination to upload otel traces to" name:"otel-dest" default:"localhost" env:"TRACE_OTEL_DEST"`
+	OpenTelemetryTLS         bool          `help:"OpenTelemetry destination requires TLS" name:"otel-tls" default:"false" env:"TRACE_OTEL_TLS"`
+	OpenTelemetryGRPC        bool          `help:"OpenTelemetry uses GPRC protocol" name:"otel-grpc" default:"true" env:"TRACE_OTEL_GRPC"`
+	OpenTelemetryPort        int           `help:"OpenTelemetry destination port to send traces to" name:"otel-port" default:"4317" env:"TRACE_OTEL_PORT"`
+	Destination              string        `required:"" help:"IP or Hostname address to traceroute to" env:"TRACE_DESTINATION"`
 	hostname                 string
 }
 
@@ -195,7 +195,7 @@ func (toc *TraceOtelConfig) initTraceProvider(timeout time.Duration) (func(), er
 
 	return func() {
 		// Shutdown will flush any remaining spans and shut down the exporter.
-		fmt.Printf("flushing TracerProvider")
+		fmt.Printf("flushing TracerProvider to otel server %s", dst)
 		err := tracerProvider.Shutdown(ctx)
 		if err != nil {
 			fmt.Printf("error flushing TracerProvider: %s", err)
