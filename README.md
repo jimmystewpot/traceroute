@@ -71,3 +71,9 @@ Flags:
       --destination=STRING        IP or Hostname address to traceroute to ($TRACE_DESTINATION)
 
 ```
+
+## Docker
+
+```
+docker buildx build --attest type=sbom --platform linux/amd64 --tag jimmystewpot/traceroute:latest .
+```
