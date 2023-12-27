@@ -1,6 +1,14 @@
 package tcp
 
 import (
+	"fmt"
+	"log"
+	"math"
+	"math/rand"
+	"net"
+	"sync"
+	"time"
+
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/mgranderath/traceroute/listener_channel"
@@ -8,20 +16,18 @@ import (
 	"github.com/mgranderath/traceroute/parallel_limiter"
 	"github.com/mgranderath/traceroute/signal"
 	"github.com/mgranderath/traceroute/util"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/context"
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
-	"log"
-	"math"
-	"math/rand"
-	"net"
-	"sync"
-	"time"
 )
 
 type inflightData struct {
-	start time.Time
-	ttl   uint16
+	start     time.Time
+	ttl       uint16
+	childSpan trace.Span
 }
 
 type results struct {
@@ -109,8 +115,15 @@ func (tr *Traceroute) timeoutLoop() {
 					Success: false,
 					TTL:     request.ttl,
 				})
+				request.childSpan.SetAttributes(
+					attribute.Int64("ttl", int64(request.ttl)),
+					attribute.String("hop", "null"),
+					attribute.String("rtt", time.Since(request.start).String()),
+				)
+				request.childSpan.SetStatus(codes.Error, "timeout")
 				tr.results.concurrentRequests.Finished()
 				tr.opConfig.wg.Done()
+				request.childSpan.End()
 				return true
 			})
 		}
@@ -152,8 +165,16 @@ func (tr *Traceroute) handleICMPMessage(msg listener_channel.ReceivedMessage, da
 		TTL:     request.ttl,
 		RTT:     &elapsed,
 	})
+	request.childSpan.SetAttributes(
+		attribute.Int64("ttl", int64(request.ttl)),
+		attribute.String("hop", msg.Peer.String()),
+		attribute.String("rtt", elapsed.String()),
+	)
+	request.childSpan.SetStatus(codes.Ok, "success")
+
 	tr.results.concurrentRequests.Finished()
 	tr.opConfig.wg.Done()
+	request.childSpan.End()
 }
 
 func (tr *Traceroute) icmpListener() {
@@ -236,7 +257,15 @@ func (tr *Traceroute) tcpListener() {
 	}
 }
 
-func (tr *Traceroute) sendMessage(ttl uint16) {
+func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
+	_, childSpan := tr.trcrtConfig.Tracer.Start(
+		parentctx,
+		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
+		tr.returnTraceAttributes(),
+		trace.WithAttributes(attribute.Int64("ttl", int64(ttl))),
+		trace.WithSpanKind(trace.SpanKindClient),
+	)
+
 	_, srcPort := util.LocalIPPort(tr.opConfig.destIP)
 	ipHeader := &layers.IPv4{
 		SrcIP:    tr.opConfig.srcIP,
@@ -272,21 +301,25 @@ func (tr *Traceroute) sendMessage(ttl uint16) {
 	err := ipv4.NewPacketConn(tr.opConfig.tcpConn).SetTTL(int(ttl))
 	if err != nil {
 		tr.results.err = err
+		childSpan.SetStatus(codes.Error, "failure")
 		tr.opConfig.cancel()
+		childSpan.End()
 		return
 	}
 
 	start := time.Now()
 	if _, err := tr.opConfig.tcpConn.WriteTo(buf.Bytes(), &net.IPAddr{IP: tr.opConfig.destIP}); err != nil {
 		tr.results.err = err
+		childSpan.SetStatus(codes.Error, "failure")
 		tr.opConfig.cancel()
+		childSpan.End()
 		return
 	}
-	tr.results.inflightRequests.Store(sequenceNumber, inflightData{start: start, ttl: ttl})
+	tr.results.inflightRequests.Store(sequenceNumber, inflightData{start: start, ttl: ttl, childSpan: childSpan})
 }
 
-func (tr *Traceroute) sendLoop() {
-	rand.Seed(time.Now().UTC().UnixNano())
+func (tr *Traceroute) sendLoop(parentctx context.Context) {
+	rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 	defer tr.opConfig.wg.Done()
 
 	for ttl := uint16(1); ttl <= tr.trcrtConfig.MaxHops; ttl++ {
@@ -301,28 +334,48 @@ func (tr *Traceroute) sendLoop() {
 				return
 			case <-tr.results.concurrentRequests.Start():
 				tr.opConfig.wg.Add(1)
-				go tr.sendMessage(ttl)
+				go tr.sendMessage(parentctx, ttl)
 			}
 		}
 	}
 }
 
 func (tr *Traceroute) start() (*map[uint16][]methods.TracerouteHop, error) {
+	parentctx, parentSpan := tr.trcrtConfig.Tracer.Start(
+		tr.trcrtConfig.TraceCtx,
+		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
+		tr.returnTraceAttributes(),
+		trace.WithSpanKind(trace.SpanKindClient),
+	)
+	defer parentSpan.End()
+
 	go tr.timeoutLoop()
 	go tr.icmpListener()
 	go tr.tcpListener()
 
 	tr.opConfig.wg.Add(1)
-	go tr.sendLoop()
+	go tr.sendLoop(parentctx)
 
 	tr.opConfig.wg.Wait()
 	tr.opConfig.cancel()
 
 	if tr.results.err != nil {
+		parentSpan.SetStatus(codes.Error, fmt.Sprintf("%s", tr.results.err))
 		return nil, tr.results.err
 	}
 
 	result := methods.ReduceFinalResult(tr.results.results, tr.trcrtConfig.MaxHops, tr.opConfig.destIP)
+	parentSpan.SetStatus(codes.Ok, "success")
 
 	return &result, tr.results.err
+}
+
+func (tr *Traceroute) returnTraceAttributes() trace.SpanStartEventOption {
+	return trace.WithAttributes(
+		attribute.String("source", tr.trcrtConfig.LocalHostname),
+		attribute.String("destination_hostname", tr.trcrtConfig.DestinationHostname),
+		attribute.Int64("max_ttl", int64(tr.trcrtConfig.MaxHops)),
+		attribute.String("protocol", "tcp"),
+		attribute.String("xid", tr.trcrtConfig.Xid.String()),
+	)
 }

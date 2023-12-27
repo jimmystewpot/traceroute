@@ -123,6 +123,7 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 		parentctx,
 		fmt.Sprintf("%s/traceroute/%s", tr.trcrtConfig.LocalHostname, tr.opConfig.destIP),
 		tr.returnTraceAttributes(),
+		trace.WithAttributes(attribute.Int64("ttl", int64(ttl))),
 		trace.WithSpanKind(trace.SpanKindClient),
 	)
 	defer childSpan.End()
@@ -182,9 +183,6 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 
 	tr.results.inflightRequests.Store(uint16(srcPort), inflight)
 
-	childSpan.SetAttributes(
-		attribute.Int64("ttl", int64(ttl)),
-	)
 	go func() {
 		reply := make([]byte, 1500)
 		_, peer, err := udpConn.ReadFrom(reply)
