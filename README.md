@@ -93,6 +93,18 @@ Flags:
       --validate              Validate the configuration file format is correct and then exit
 ```
 
+### generate empty configuration
+```
+$ traceroute generate --help
+Usage: traceroute generate
+
+Generate a configuration file and print to stdout to run this as a service
+
+Flags:
+  -h, --help    Show context-sensitive help.
+
+```
+
 
 ## Docker
 
