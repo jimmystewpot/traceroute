@@ -111,3 +111,11 @@ Flags:
 ```
 docker buildx build --attest type=sbom --platform linux/amd64 --tag jimmystewpot/traceroute:latest .
 ```
+
+Running it as a service requires the configuration to be available via a local mount export.
+
+```
+docker run -v { path to local configuration file folder}:/{ where the configuration file is going to be available inside the container }/ \
+      jimmystewpot/traceroute:latest service \
+      --config-file=/{ where the configuration file is going to be available inside the container }/config.yaml
+```
