@@ -14,10 +14,10 @@ const (
 	schemaVersion string = "1.0.0"
 	// if values are not defined in the configuration file, these are the defaults.
 	defaultParallelRequests uint16        = 16
-	defaultProtocol         string        = "udp"
+	defaultProtocol         string        = "tcp"
 	defaultMaxHops          uint16        = 60
 	defaultNumberQueries    uint16        = 3
-	defaultTracePort        int           = 16543
+	defaultTracePort        int           = 80
 	defaultInterval         time.Duration = 60 * time.Second
 	defaultTimeout          time.Duration = 5 * time.Second
 )
@@ -45,7 +45,7 @@ type TraceConfigGlobal struct {
 }
 
 type TraceConfigOtel struct {
-	Destination string `yaml:"destination" validate:"fqdn"`
+	Destination string `yaml:"destination" validate:"required"`
 	TLS         bool   `yaml:"tls"`
 	Port        int    `yaml:"port"`
 	GRPC        bool   `yaml:"grpc"`
@@ -141,16 +141,16 @@ func PrintEmptyConfiguration() error {
 			"third-test-domain.net",
 		},
 		TraceConfigGlobal: TraceConfigGlobal{
-			Protocol:         "udp",
-			MaxHops:          5,
-			NQueries:         3,
-			ParallelRequests: 8,
-			Timeout:          2 * time.Second,
-			TraceRoutePort:   33434,
-			Interval:         1 * time.Minute,
+			Protocol:         defaultProtocol,
+			MaxHops:          defaultMaxHops,
+			NQueries:         defaultNumberQueries,
+			ParallelRequests: defaultParallelRequests,
+			Timeout:          defaultTimeout,
+			TraceRoutePort:   defaultTracePort,
+			Interval:         defaultInterval,
 		},
 		TraceConfigOtel: TraceConfigOtel{
-			Destination: "open-telemetry-server.my-org.org",
+			Destination: "192.168.0.183",
 			TLS:         false,
 			Port:        4317,
 			GRPC:        true,

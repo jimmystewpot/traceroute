@@ -12,6 +12,6 @@ FROM ubuntu:jammy
 
 WORKDIR /
 
-COPY --from=BuildStage /usr/local/bin/traceroute /usr/local/bin/traceroute
+COPY --from=BuildStage /usr/local/bin/traceroute /opt/traceroute/traceroute
 
-ENTRYPOINT [ "/usr/local/bin/traceroute"]
+ENTRYPOINT [ "/opt/traceroute/traceroute"]

@@ -176,6 +176,7 @@ func (tc *TraceCLI) TCP() error {
 	return nil
 }
 
+// translateConfig makes the configuration compatible with the root traceroute fork
 func (tc *TraceCLI) translateConfig(ctx context.Context) methods.TracerouteConfig {
 	return methods.TracerouteConfig{
 		DestinationHostname: tc.Destination,
