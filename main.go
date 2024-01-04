@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/mgranderath/traceroute/methods"
-	"github.com/mgranderath/traceroute/methods/tcp"
-	"github.com/mgranderath/traceroute/methods/udp"
+	"github.com/jimmystewpot/traceroute/config"
+	"github.com/jimmystewpot/traceroute/methods"
+	"github.com/jimmystewpot/traceroute/methods/tcp"
+	"github.com/jimmystewpot/traceroute/methods/udp"
 	"github.com/rs/xid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -27,8 +28,10 @@ import (
 )
 
 var cli struct {
-	Udp TraceOtelConfig `cmd:"" help:"UDP traceroute."`
-	Tcp TraceOtelConfig `cmd:"" help:"TCP traceroute"`
+	Udp      TraceOtelConfig `cmd:"" help:"UDP traceroute."`
+	Tcp      TraceOtelConfig `cmd:"" help:"TCP traceroute"`
+	Service  ServiceCli      `cmd:"" help:"Run as a service"`
+	Generate GenerateCli     `cmd:"" help:"Generate a configuration file and print to stdout to run this as a service"`
 }
 
 type TraceOtelConfig struct {
@@ -46,6 +49,14 @@ type TraceOtelConfig struct {
 	hostname                 string
 }
 
+type ServiceCli struct {
+	ConfigFile     string `help:"Load a YAML configuration file" env:"TRACE_CFGFILE" required:"ValidateConfig"`
+	ValidateConfig bool   `cmd:"" help:"Validate the configuration file format is correct" name:"validate"`
+}
+
+type GenerateCli struct{}
+
+// Run the OTEL traceroutes from the cmd line, i.e. not as a service.
 func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 	var err error
 	toc.hostname, err = os.Hostname()
@@ -64,6 +75,7 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 		return err
 	}
 	defer exportTrace()
+
 	ctx := context.Background()
 	// ctx is reset with the baggage added.
 	ctx, err = toc.initBaggage(ctx)
@@ -84,32 +96,30 @@ func (toc *TraceOtelConfig) Run(kongctx *kong.Context) error {
 		TraceCtx:            ctx,
 	}
 
+	var res *map[uint16][]methods.TracerouteHop
 	switch kongctx.Command() {
 	case "tcp":
 		for i := 0; i < len(destinations); i++ {
 			tcpTraceroute := tcp.New(destinations[i], cfg)
-			res, err := tcpTraceroute.Start()
-			if err != nil {
-				return err
-			}
-			if toc.PrintResults {
-				printResults(res)
-			}
+			res, err = tcpTraceroute.Start()
 		}
 
 	case "udp":
 		for i := 0; i < len(destinations); i++ {
 			tcpTraceroute := udp.New(destinations[i], true, cfg)
-			res, err := tcpTraceroute.Start()
-			if err != nil {
-				return err
-			}
-			if toc.PrintResults {
-				printResults(res)
-			}
+			res, err = tcpTraceroute.Start()
+
 		}
 	default:
 		return fmt.Errorf("error command %s not understood", kongctx.Command())
+	}
+
+	// checks error from within switch statement
+	if err != nil {
+		return err
+	}
+	if toc.PrintResults {
+		printResults(res)
 	}
 	return nil
 }
@@ -207,6 +217,26 @@ func (toc *TraceOtelConfig) initTraceProvider(timeout time.Duration) (func(), er
 		}
 		cancel()
 	}, nil
+}
+
+func (svc *ServiceCli) Run() error {
+	if svc.ValidateConfig {
+		_, err := config.LoadConfigFromFile(svc.ConfigFile)
+		if err != nil {
+			return fmt.Errorf("configuration failed to validate: %s", err)
+		}
+		return nil
+	}
+	return nil
+}
+
+// Generate a configuration file and output it to stdout.
+func (gen *GenerateCli) Run() error {
+	err := config.PrintEmptyConfiguration()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // printResults will print out the results line by line for easy reading.

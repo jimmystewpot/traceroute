@@ -1,0 +1,135 @@
+package config
+
+import (
+	"fmt"
+	"io"
+	"os"
+	"time"
+
+	"github.com/go-playground/validator/v10"
+	"gopkg.in/yaml.v3"
+)
+
+const (
+	schemaVersion string = "1.0.0"
+)
+
+var (
+	validate *validator.Validate
+)
+
+type TraceConfig struct {
+	SchemaVersion           string                 `yaml:"schema-version" validate:"semver,required"`
+	TraceConfigDestinations []string               `yaml:"destinations" validate:"dive,fqdn"`
+	TraceConfigGlobal       TraceConfigGlobal      `yaml:"globals"`
+	TraceConfigOtel         TraceConfigOtel        `yaml:"opentelemetry"`
+	TraceConfigHealthCheck  TraceConfigHealthCheck `yaml:"healthcheck"`
+}
+
+type TraceConfigGlobal struct {
+	Protocol         string        `yaml:"protocol" validate:"oneof=udp tcp"`
+	MaxHops          uint16        `yaml:"max-hops"`
+	NQueries         uint16        `yaml:"number-queries"`
+	ParallelRequests uint16        `yaml:"parallel-requests"`
+	Timeout          time.Duration `yaml:"timeout"`
+	TraceRoutePort   int           `yaml:"source-port"`
+	Interval         time.Duration `yaml:"interval"`
+}
+
+type TraceConfigOtel struct {
+	Destination string `yaml:"destination" validate:"fqdn"`
+	TLS         bool   `yaml:"tls"`
+	Port        int    `yaml:"port"`
+	GRPC        bool   `yaml:"grpc"`
+}
+
+type TraceConfigHealthCheck struct {
+	Path    string `yaml:"path"`
+	Enabled bool   `yaml:"enabled"`
+	Port    int    `yaml:"port"`
+}
+
+// ReadConfig wil read the YAML file from disk and render it into the TraceConfig struct.
+func (tc *TraceConfig) LoadConfig(r io.Reader) error {
+	err := yaml.NewDecoder(r).Decode(tc)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// LoadConfigFromFile will load the configuration from file.
+//
+//nolint:lll // validation has many fields that can't be zero.
+func LoadConfigFromFile(filename string) (*TraceConfig, error) {
+	// cfg is a slice of strings unmarsalled from YAML
+	cfg := new(TraceConfig)
+
+	// Open passed in filename
+	f, err := os.Open(filename)
+	if err != nil {
+		return &TraceConfig{}, err
+	}
+	defer f.Close()
+
+	// Load from reader, validate
+	err = cfg.LoadConfig(f)
+	if err != nil {
+		return &TraceConfig{}, err
+	}
+
+	validate = validator.New()
+	err = validate.Struct(cfg)
+	if err != nil {
+		return &TraceConfig{}, err
+	}
+
+	return cfg, nil
+}
+
+// PrintEmptyConfiguration is used to generate an empty configuration to stdout
+func PrintEmptyConfiguration() error {
+	emptyConfig := TraceConfig{
+		SchemaVersion: schemaVersion,
+		TraceConfigDestinations: []string{
+			"first-test-domain.org",
+			"second-test-domain.org",
+			"third-test-domain.net",
+		},
+		TraceConfigGlobal: TraceConfigGlobal{
+			Protocol:         "udp",
+			MaxHops:          5,
+			NQueries:         3,
+			ParallelRequests: 8,
+			Timeout:          2 * time.Second,
+			TraceRoutePort:   33434,
+			Interval:         1 * time.Minute,
+		},
+		TraceConfigOtel: TraceConfigOtel{
+			Destination: "open-telemetry-server.my-org.org",
+			TLS:         false,
+			Port:        4317,
+			GRPC:        true,
+		},
+		TraceConfigHealthCheck: TraceConfigHealthCheck{
+			Path:    "/_healthcheck",
+			Enabled: true,
+			Port:    8080,
+		},
+	}
+
+	validate = validator.New()
+	err := validate.Struct(emptyConfig)
+	if err != nil {
+		return err
+	}
+
+	yamlConfiguration, err := yaml.Marshal(&emptyConfig)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("---\n%s\n\n", string(yamlConfiguration))
+
+	return nil
+}

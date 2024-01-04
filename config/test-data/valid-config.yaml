@@ -1,0 +1,17 @@
+---
+schema-version: 1.0.0
+destinations:
+  - foo.org
+  - google.com
+globals:
+  protocol: udp
+  max-hops: 30
+  number-queries: 6
+  parallel-requests: 8
+  timeout: 2s
+  source-port: 33434
+otel:
+  destination: foo.foo.org
+  tls: false
+  port: 4317
+  grpc: false
