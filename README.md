@@ -1,9 +1,11 @@
 # Traceroute (Golang)
 
+**NOTE** This is an experimental fork that emits OpenTelemetry trace spans
+
+
 This is an implementation of UDP (quic support) and TCP Traceroute in golang. 
 It is specifically tailored to my use case for measurements and can be seen as an example for implementation.
 
-**NOTE** This is an experimental fork to have network distributed traceroutes emit otel traces.
 
 ## Building
 
@@ -21,8 +23,11 @@ Flags:
   -h, --help    Show context-sensitive help.
 
 Commands:
-  udp    UDP traceroute.
-  tcp    TCP traceroute
+  udp         UDP traceroute.
+  tcp         TCP traceroute
+  service     Run as a service
+  generate    Generate a configuration file and print to stdout to run this as a service
+
 
 Run "traceroute --help" for more information on a command.
 
@@ -73,6 +78,21 @@ Flags:
       --print-results             Print the results to stdout, this is not recommended if running in docker ($TRACE_STDOUT)
 
 ```
+
+### running as a service
+```
+$ traceroute service --help
+Usage: traceroute service
+
+Run as a service
+
+Flags:
+  -h, --help                  Show context-sensitive help.
+
+      --config-file=STRING    Load a YAML configuration file ($TRACE_CFGFILE)
+      --validate              Validate the configuration file format is correct and then exit
+```
+
 
 ## Docker
 
