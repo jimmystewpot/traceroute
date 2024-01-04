@@ -26,6 +26,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+const (
+	tracerName string = "%s/traceroute"
+)
+
 type TraceCLI struct {
 	MaxHops                  uint16        `help:"Set the maximum hops for the traceroute" short:"m" default:"30" env:"TRACE_MAXHOPS"`
 	NQueries                 uint16        `help:"Set the number of probes per hop to send" short:"q" default:"3" env:"TRACE_NQUERIES"`
@@ -75,7 +79,7 @@ func (tc *TraceCLI) Run(kongctx *kong.Context) error {
 		ParallelRequests:    tc.ParallelRequests,
 		Port:                tc.TraceRoutePort,
 		Timeout:             tc.Timeout,
-		Tracer:              otel.Tracer(fmt.Sprintf("%s/traceroute", tc.Hostname)),
+		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
 		Xid:                 xid.New(),
 		TraceCtx:            ctx,
 	}
@@ -135,7 +139,7 @@ func (tc *TraceCLI) UDP() error {
 		ParallelRequests:    tc.ParallelRequests,
 		Port:                tc.TraceRoutePort,
 		Timeout:             tc.Timeout,
-		Tracer:              otel.Tracer(fmt.Sprintf("%s/traceroute", tc.Hostname)),
+		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
 		Xid:                 xid.New(),
 		TraceCtx:            ctx,
 	}
@@ -183,7 +187,7 @@ func (tc *TraceCLI) TCP() error {
 		ParallelRequests:    tc.ParallelRequests,
 		Port:                tc.TraceRoutePort,
 		Timeout:             tc.Timeout,
-		Tracer:              otel.Tracer(fmt.Sprintf("%s/traceroute", tc.Hostname)),
+		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
 		Xid:                 xid.New(),
 		TraceCtx:            ctx,
 	}

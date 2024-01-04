@@ -97,29 +97,12 @@ func New(cfg *config.TraceConfig) (*Service, error) {
 
 func (svc *Service) Start() error {
 	svc.LogStart()
-	hc := HealthCheck{
+	hc := &HealthCheck{
 		Details: HealthCheckDetails{},
 		close:   make(chan struct{}),
 	}
-	if svc.Config.TraceConfigHealthCheck.Enabled {
-		go hc.RunHealthCheckSvc(svc.Config.TraceConfigHealthCheck)
-		go func() {
-			sigint := make(chan os.Signal, 1)
-			signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
-			<-sigint
+	go hc.RunHealthCheckSvc(svc.Config.TraceConfigHealthCheck)
 
-			//logger.Fatal("Shutting Down")
-			// We received an interrupt signal, shut down.
-			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(60*time.Second))
-			defer cancel()
-			if err := healthCheckService.Shutdown(ctx); err != nil {
-				// Error from closing listeners, or context timeout:
-				logger.Warn("http server shutdown",
-					zap.Error(err))
-			}
-			close(hc.close)
-		}()
-	}
 	// set the interval at which the traceroutes are executed.
 	ticker := time.NewTicker(svc.Config.TraceConfigGlobal.Interval)
 	globalCfg := trace.TraceCLI{
@@ -202,21 +185,38 @@ func (svc *Service) LogStart() {
 
 // RunHealthCheckSvc will launch the background process to serve health check requests.
 func (health *HealthCheck) RunHealthCheckSvc(cfg config.TraceConfigHealthCheck) error {
-	// instantiate the http port
-	healthCheckService.Addr = fmt.Sprintf(":%d", cfg.Port)
+	if cfg.Enabled {
+		go func() {
+			sigint := make(chan os.Signal, 1)
+			signal.Notify(sigint, syscall.SIGINT, syscall.SIGTERM)
+			<-sigint
 
-	// handle the http healthcheck Get request
-	http.HandleFunc(cfg.Path, health.Get)
-	// fallback for any other request to raise an error.
-	http.HandleFunc("/", health.invalid)
+			// We received an interrupt signal, shut down.
+			ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+			if err := healthCheckService.Shutdown(ctx); err != nil {
+				// Error from closing listeners, or context timeout:
+				logger.Warn("http server shutdown",
+					zap.Error(err))
+			}
+			close(health.close)
+		}()
+		// instantiate the http port
+		healthCheckService.Addr = fmt.Sprintf(":%d", cfg.Port)
 
-	if err := healthCheckService.ListenAndServe(); err != http.ErrServerClosed {
-		// Error starting or closing listener:
-		return fmt.Errorf("HTTP server ListenAndServe: %v", err)
+		// handle the http healthcheck Get request
+		http.HandleFunc(cfg.Path, health.Get)
+		// fallback for any other request to raise an error.
+		http.HandleFunc("/", health.invalid)
+
+		if err := healthCheckService.ListenAndServe(); err != http.ErrServerClosed {
+			// Error starting or closing listener:
+			return fmt.Errorf("HTTP server ListenAndServe: %v", err)
+		}
+
+		// block until healthcheck is being shutdown by the background goroutine sigint.
+		<-health.close
+		return nil
 	}
-
-	// block until healthcheck is being shutdown by the background goroutine sigint.
-	<-health.close
 	return nil
 }
 
