@@ -71,18 +71,7 @@ func (tc *TraceCLI) Run(kongctx *kong.Context) error {
 		return err
 	}
 
-	cfg := methods.TracerouteConfig{
-		DestinationHostname: tc.Destination,
-		LocalHostname:       tc.Hostname,
-		MaxHops:             tc.MaxHops,
-		NumMeasurements:     3,
-		ParallelRequests:    tc.ParallelRequests,
-		Port:                tc.TraceRoutePort,
-		Timeout:             tc.Timeout,
-		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
-		Xid:                 xid.New(),
-		TraceCtx:            ctx,
-	}
+	cfg := tc.translateConfig(ctx)
 
 	var res *map[uint16][]methods.TracerouteHop
 	switch kongctx.Command() {
@@ -131,18 +120,7 @@ func (tc *TraceCLI) UDP() error {
 		return err
 	}
 
-	cfg := methods.TracerouteConfig{
-		DestinationHostname: tc.Destination,
-		LocalHostname:       tc.Hostname,
-		MaxHops:             tc.MaxHops,
-		NumMeasurements:     3,
-		ParallelRequests:    tc.ParallelRequests,
-		Port:                tc.TraceRoutePort,
-		Timeout:             tc.Timeout,
-		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
-		Xid:                 xid.New(),
-		TraceCtx:            ctx,
-	}
+	cfg := tc.translateConfig(ctx)
 
 	var res *map[uint16][]methods.TracerouteHop
 	for i := 0; i < len(destinations); i++ {
@@ -179,18 +157,7 @@ func (tc *TraceCLI) TCP() error {
 		return err
 	}
 
-	cfg := methods.TracerouteConfig{
-		DestinationHostname: tc.Destination,
-		LocalHostname:       tc.Hostname,
-		MaxHops:             tc.MaxHops,
-		NumMeasurements:     3,
-		ParallelRequests:    tc.ParallelRequests,
-		Port:                tc.TraceRoutePort,
-		Timeout:             tc.Timeout,
-		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
-		Xid:                 xid.New(),
-		TraceCtx:            ctx,
-	}
+	cfg := tc.translateConfig(ctx)
 
 	var res *map[uint16][]methods.TracerouteHop
 	for i := 0; i < len(destinations); i++ {
@@ -209,26 +176,41 @@ func (tc *TraceCLI) TCP() error {
 	return nil
 }
 
+func (tc *TraceCLI) translateConfig(ctx context.Context) methods.TracerouteConfig {
+	return methods.TracerouteConfig{
+		DestinationHostname: tc.Destination,
+		LocalHostname:       tc.Hostname,
+		MaxHops:             tc.MaxHops,
+		NumMeasurements:     3,
+		ParallelRequests:    tc.ParallelRequests,
+		Port:                tc.TraceRoutePort,
+		Timeout:             tc.Timeout,
+		Tracer:              otel.Tracer(fmt.Sprintf(tracerName, tc.Hostname)),
+		Xid:                 xid.New(),
+		TraceCtx:            ctx,
+	}
+}
+
 // initBaggage will include the attributes globally for all spans. This works on some
 // otel recivers but not all.
-func (toc *TraceCLI) initBaggage(ctx context.Context) (context.Context, error) {
+func (tc *TraceCLI) initBaggage(ctx context.Context) (context.Context, error) {
 	bag := baggage.FromContext(ctx)
 	// set the global destination hostname for the traceroutes to be included in all spans.
-	dest, err := baggage.NewMember("destination_hostnane", toc.Destination)
+	dest, err := baggage.NewMember("destination_hostnane", tc.Destination)
 	if err != nil {
 		return ctx, err
 	}
 	bag, _ = bag.SetMember(dest)
 
 	// set the source hostname for all traceroutes to be included in all spans.
-	src, err := baggage.NewMember("source", toc.Hostname)
+	src, err := baggage.NewMember("source", tc.Hostname)
 	if err != nil {
 		return ctx, err
 	}
 	bag, _ = bag.SetMember(src)
 
 	// set the MAX TTL for all traceroutes to be included in all spans
-	maxTTL, err := baggage.NewMember("max_hops", fmt.Sprintf("%d", toc.MaxHops))
+	maxTTL, err := baggage.NewMember("max_hops", fmt.Sprintf("%d", tc.MaxHops))
 	if err != nil {
 		return ctx, err
 	}
@@ -246,12 +228,12 @@ func (toc *TraceCLI) initBaggage(ctx context.Context) (context.Context, error) {
 }
 
 // initTraceProvider is instantiated early and then run as the final function to export the trace.
-func (toc *TraceCLI) initTraceProvider(timeout time.Duration) (func(), error) {
+func (tc *TraceCLI) initTraceProvider(timeout time.Duration) (func(), error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String(fmt.Sprintf("%s/traceroute", toc.Hostname)),
+			semconv.ServiceNameKey.String(fmt.Sprintf("%s/traceroute", tc.Hostname)),
 			attribute.String("application", "github.com/jimmystewpot/traceroute"),
 		),
 	)
@@ -260,9 +242,9 @@ func (toc *TraceCLI) initTraceProvider(timeout time.Duration) (func(), error) {
 		return func() {}, err
 	}
 	var exporter *otlptrace.Exporter
-	dst := net.JoinHostPort(toc.OpenTelemetryDestination, fmt.Sprintf("%d", toc.OpenTelemetryPort))
+	dst := net.JoinHostPort(tc.OpenTelemetryDestination, fmt.Sprintf("%d", tc.OpenTelemetryPort))
 
-	switch toc.OpenTelemetryGRPC {
+	switch tc.OpenTelemetryGRPC {
 	case true:
 		// GRPC Destination Configuration for the exporter
 		conn, err := grpc.DialContext(ctx, dst, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
