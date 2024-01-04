@@ -12,6 +12,14 @@ import (
 
 const (
 	schemaVersion string = "1.0.0"
+	// if values are not defined in the configuration file, these are the defaults.
+	defaultParallelRequests uint16        = 16
+	defaultProtocol         string        = "udp"
+	defaultMaxHops          uint16        = 60
+	defaultNumberQueries    uint16        = 3
+	defaultTracePort        int           = 16543
+	defaultInterval         time.Duration = 60 * time.Second
+	defaultTimeout          time.Duration = 5 * time.Second
 )
 
 var (
@@ -49,6 +57,16 @@ type TraceConfigHealthCheck struct {
 	Port    int    `yaml:"port"`
 }
 
+type GenerateCLI struct{}
+
+func (gcli *GenerateCLI) Run() error {
+	err := PrintEmptyConfiguration()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // ReadConfig wil read the YAML file from disk and render it into the TraceConfig struct.
 func (tc *TraceConfig) LoadConfig(r io.Reader) error {
 	err := yaml.NewDecoder(r).Decode(tc)
@@ -83,8 +101,34 @@ func LoadConfigFromFile(filename string) (*TraceConfig, error) {
 	if err != nil {
 		return &TraceConfig{}, err
 	}
+	err = cfg.CheckandSetValues()
+	if err != nil {
+		return &TraceConfig{}, err
+	}
 
 	return cfg, nil
+}
+
+func (tc *TraceConfig) CheckandSetValues() error {
+	if tc.SchemaVersion != schemaVersion {
+		return fmt.Errorf("unknown schema version %s", tc.SchemaVersion)
+	}
+	if tc.TraceConfigGlobal.MaxHops == 0 {
+		tc.TraceConfigGlobal.MaxHops = defaultMaxHops
+	}
+	if tc.TraceConfigGlobal.NQueries == 0 {
+		tc.TraceConfigGlobal.NQueries = defaultNumberQueries
+	}
+	if tc.TraceConfigGlobal.Interval == 0 {
+		tc.TraceConfigGlobal.Interval = defaultInterval
+	}
+	if tc.TraceConfigGlobal.ParallelRequests == 0 {
+		tc.TraceConfigGlobal.ParallelRequests = defaultParallelRequests
+	}
+	if tc.TraceConfigGlobal.Timeout == 0 {
+		tc.TraceConfigGlobal.Timeout = defaultTimeout
+	}
+	return nil
 }
 
 // PrintEmptyConfiguration is used to generate an empty configuration to stdout

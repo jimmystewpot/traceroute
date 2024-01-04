@@ -1,17 +1,22 @@
 ---
 schema-version: 1.0.0
 destinations:
-  - foo.org
-  - google.com
+    - google.com
+    - apple.com
 globals:
-  protocol: udp
-  max-hops: 30
-  number-queries: 6
-  parallel-requests: 8
-  timeout: 2s
-  source-port: 33434
-otel:
-  destination: foo.foo.org
-  tls: false
-  port: 4317
-  grpc: false
+    protocol: udp
+    max-hops: 5
+    number-queries: 3
+    parallel-requests: 8
+    timeout: 2s
+    source-port: 33434
+    interval: 1m0s
+opentelemetry:
+    destination: localhost.localdomain
+    tls: false
+    port: 4317
+    grpc: true
+healthcheck:
+    path: /_healthcheck
+    enabled: true
+    port: 8080
