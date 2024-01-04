@@ -126,21 +126,20 @@ func (svc *Service) Start() error {
 				t := globalCfg
 				t.Destination = svc.Config.TraceConfigDestinations[i]
 				s := time.Now()
+				var err error
 				if svc.Config.TraceConfigGlobal.Protocol == "udp" {
-					err := t.UDP()
-					if err != nil {
-						logger.Warn("udp traceroute",
-							zap.Error(err),
-						)
-					}
+					err = t.UDP()
 				}
 				if svc.Config.TraceConfigGlobal.Protocol == "tcp" {
-					err := t.TCP()
-					if err != nil {
-						logger.Warn("tcp traceroute",
-							zap.Error(err),
-						)
-					}
+					err = t.TCP()
+				}
+				if err != nil {
+					logger.Warn("error",
+						zap.String("destination", t.Destination),
+						zap.String("protocol", svc.Config.TraceConfigGlobal.Protocol),
+						zap.Error(err),
+					)
+					continue
 				}
 				logger.Info("tracing",
 					zap.String("service_name", ServiceName),
