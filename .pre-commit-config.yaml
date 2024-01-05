@@ -22,3 +22,13 @@ repos:
         language: golang
         require_serial: true
         pass_filenames: false
+      - id: golang-test-coverage-report
+        name: golang-test-coverage-report
+        description: generate golang test coverage reports.
+        entry: make test-all
+        types:
+          - go
+        language: golang
+        require_serial: true
+        pass_filenames: false
+

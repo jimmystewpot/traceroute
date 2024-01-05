@@ -1,7 +1,7 @@
 TOOL := "jimmystewpot/traceroute"
 INTERACTIVE := $(shell [ -t 0 ] && echo 1)
 TEST_DIRS := ./...
-REPORTS_DIR := ci/
+REPORTS_DIR := ci
 
 test-all: deps lint test
 
