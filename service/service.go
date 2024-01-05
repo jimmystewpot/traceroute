@@ -48,15 +48,15 @@ type HealthCheckDetails struct {
 	TotalTraces        uint64          `json:"total-traces"`
 	DNSLatency         []time.Duration `json:"dns-latency"`
 }
-type ServiceCLI struct {
+type CLI struct {
 	ConfigFile     string `help:"Load a YAML configuration file" env:"TRACE_CFGFILE" required:"ValidateConfig"`
 	ValidateConfig bool   `cmd:"" help:"Validate the configuration file format is correct" name:"validate"`
 }
 
-func (scli *ServiceCLI) Run() error {
+func (cli *CLI) Run() error {
 	logger, _ = zap.NewProduction(zap.AddCaller())
-	if scli.ValidateConfig {
-		_, err := config.LoadConfigFromFile(scli.ConfigFile)
+	if cli.ValidateConfig {
+		_, err := config.LoadConfigFromFile(cli.ConfigFile)
 		if err != nil {
 			logger.Warn("configuration failed to validate",
 				zap.Error(err),
@@ -65,7 +65,7 @@ func (scli *ServiceCLI) Run() error {
 		}
 		return nil
 	}
-	cfg, err := config.LoadConfigFromFile(scli.ConfigFile)
+	cfg, err := config.LoadConfigFromFile(cli.ConfigFile)
 	if err != nil {
 		logger.Fatal("configuration failed to load",
 			zap.Error(err),
@@ -77,7 +77,10 @@ func (scli *ServiceCLI) Run() error {
 			zap.Error(err),
 		)
 	}
-	svc.Start()
+	err = svc.Start()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -105,7 +108,7 @@ func (svc *Service) Start() error {
 
 	// set the interval at which the traceroutes are executed.
 	ticker := time.NewTicker(svc.Config.TraceConfigGlobal.Interval)
-	globalCfg := trace.TraceCLI{
+	globalCfg := trace.CLI{
 		MaxHops:                  svc.Config.TraceConfigGlobal.MaxHops,
 		NQueries:                 svc.Config.TraceConfigGlobal.NQueries,
 		ParallelRequests:         svc.Config.TraceConfigGlobal.ParallelRequests,
@@ -148,15 +151,18 @@ func (svc *Service) Start() error {
 				)
 			}
 
-			logger.Sync()
+			err := logger.Sync()
+			if err != nil {
+				logger.Warn("unable to flush logger",
+					zap.Error(err),
+				)
+			}
 		case <-svc.close:
 			logger.Warn("svc.close",
 				zap.String("msg", "closing down gracefully"),
 			)
-
 		}
 	}
-	return nil
 }
 
 func (svc *Service) LogStart() {
@@ -183,7 +189,7 @@ func (svc *Service) LogStart() {
 }
 
 // RunHealthCheckSvc will launch the background process to serve health check requests.
-func (health *HealthCheck) RunHealthCheckSvc(cfg config.TraceConfigHealthCheck) error {
+func (health *HealthCheck) RunHealthCheckSvc(cfg config.TraceConfigHealthCheck) {
 	if cfg.Enabled {
 		go func() {
 			sigint := make(chan os.Signal, 1)
@@ -191,7 +197,8 @@ func (health *HealthCheck) RunHealthCheckSvc(cfg config.TraceConfigHealthCheck) 
 			<-sigint
 
 			// We received an interrupt signal, shut down.
-			ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+			defer cancel()
 			if err := healthCheckService.Shutdown(ctx); err != nil {
 				// Error from closing listeners, or context timeout:
 				logger.Warn("http server shutdown",
@@ -209,14 +216,14 @@ func (health *HealthCheck) RunHealthCheckSvc(cfg config.TraceConfigHealthCheck) 
 
 		if err := healthCheckService.ListenAndServe(); err != http.ErrServerClosed {
 			// Error starting or closing listener:
-			return fmt.Errorf("HTTP server ListenAndServe: %v", err)
+			logger.Fatal("HTTP server ListenAndServe",
+				zap.Error(err),
+			)
 		}
 
 		// block until healthcheck is being shutdown by the background goroutine sigint.
 		<-health.close
-		return nil
 	}
-	return nil
 }
 
 func (health *HealthCheck) Get(w http.ResponseWriter, req *http.Request) {
@@ -232,8 +239,12 @@ func (health *HealthCheck) Get(w http.ResponseWriter, req *http.Request) {
 	}
 	// write headers and body to response.
 	w.Header().Add("Content-Type", "application/json")
+	w.Header().Add("Requested-URI", req.RequestURI)
 	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, string(response))
+	_, err = io.WriteString(w, string(response))
+	if err != nil {
+		http.Error(w, "service error", http.StatusInternalServerError)
+	}
 }
 
 // invalid returns an error for any paths except for the HealthCheck.

@@ -1,9 +1,11 @@
+//nolint:revive,stylecheck // avoid changing package names from fork.
 package listener_channel
 
 import (
-	"golang.org/x/net/context"
 	"net"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 type ReceivedMessage struct {

@@ -11,10 +11,10 @@ import (
 )
 
 var cli struct {
-	Udp      trace.TraceCLI     `cmd:"" help:"UDP traceroute."`
-	Tcp      trace.TraceCLI     `cmd:"" help:"TCP traceroute"`
-	Service  service.ServiceCLI `cmd:"" help:"Run as a service"`
-	Generate config.GenerateCLI `cmd:"" help:"Generate a configuration file and print to stdout to run this as a service"`
+	UDP      trace.CLI   `cmd:"" help:"UDP traceroute."`
+	TCP      trace.CLI   `cmd:"" help:"TCP traceroute"`
+	Service  service.CLI `cmd:"" help:"Run as a service"`
+	Generate config.CLI  `cmd:"" help:"Generate a configuration file and print to stdout to run this as a service"`
 }
 
 func main() {

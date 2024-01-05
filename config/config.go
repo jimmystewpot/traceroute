@@ -57,9 +57,9 @@ type TraceConfigHealthCheck struct {
 	Port    int    `yaml:"port"`
 }
 
-type GenerateCLI struct{}
+type CLI struct{}
 
-func (gcli *GenerateCLI) Run() error {
+func (cli *CLI) Run() error {
 	err := PrintEmptyConfiguration()
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func (tc *TraceConfig) LoadConfig(r io.Reader) error {
 
 // LoadConfigFromFile will load the configuration from file.
 //
-//nolint:lll // validation has many fields that can't be zero.
+
 func LoadConfigFromFile(filename string) (*TraceConfig, error) {
 	// cfg is a slice of strings unmarsalled from YAML
 	cfg := new(TraceConfig)

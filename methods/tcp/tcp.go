@@ -61,6 +61,7 @@ type opConfig struct {
 	cancel context.CancelFunc
 }
 
+//nolint:gocritic // config is large and required
 func New(destIP net.IP, config methods.TracerouteConfig) *Traceroute {
 	return &Traceroute{
 		opConfig: opConfig{
@@ -128,6 +129,7 @@ func (tr *Traceroute) timeoutLoop() {
 			})
 		}
 	}()
+	//nolint:gosimple // keeping code from fork
 	select {
 	case <-tr.opConfig.ctx.Done():
 		ticker.Stop()
@@ -274,6 +276,7 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 		TTL:      uint8(ttl),
 	}
 
+	//nolint:gosec  //packet sequence randomisation is enough in this context.
 	sequenceNumber := uint32(rand.Intn(math.MaxUint32))
 
 	tcpHeader := &layers.TCP{
@@ -319,6 +322,7 @@ func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 }
 
 func (tr *Traceroute) sendLoop(parentctx context.Context) {
+	//nolint:gosec // not cryptographic
 	rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 	defer tr.opConfig.wg.Done()
 

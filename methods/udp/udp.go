@@ -57,6 +57,7 @@ type Traceroute struct {
 	results     results
 }
 
+//nolint:gocritic // config is large and required.
 func New(destIP net.IP, quic bool, config methods.TracerouteConfig) *Traceroute {
 	return &Traceroute{
 		opConfig: opConfig{
@@ -118,6 +119,7 @@ func (tr *Traceroute) getUDPConn(try int) (net.IP, int, net.PacketConn) {
 	return srcIP, udpConn.LocalAddr().(*net.UDPAddr).Port, udpConn
 }
 
+//nolint:funlen  // required length exceeds recommended.
 func (tr *Traceroute) sendMessage(parentctx context.Context, ttl uint16) {
 	_, childSpan := tr.trcrtConfig.Tracer.Start(
 		parentctx,
@@ -298,6 +300,7 @@ func (tr *Traceroute) icmpListener() {
 }
 
 func (tr *Traceroute) sendLoop(parentctx context.Context) {
+	//nolint:gosec // not cryptographic
 	rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 
 	for ttl := uint16(1); ttl <= tr.trcrtConfig.MaxHops; ttl++ {

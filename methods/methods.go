@@ -37,6 +37,7 @@ func GetIPHeaderLength(data []byte) (int, error) {
 	if len(data) < 1 {
 		return 0, errors.New("received invalid IP header")
 	}
+	//nolint:gomnd  // irrelevant error
 	return int((data[0] & 0x0F) * 4), nil
 }
 

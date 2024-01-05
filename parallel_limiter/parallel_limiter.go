@@ -1,3 +1,4 @@
+//nolint:revive,stylecheck // avoid changing package names from fork.
 package parallel_limiter
 
 import (
