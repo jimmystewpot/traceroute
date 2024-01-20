@@ -1,53 +1,53 @@
-{"Time":"2024-01-05T12:26:35.534338953+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute"}
-{"Time":"2024-01-05T12:26:35.534389118+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute","Output":"?   \tgithub.com/jimmystewpot/traceroute\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534403766+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534421761+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/config"}
-{"Time":"2024-01-05T12:26:35.534456116+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/listener_channel"}
-{"Time":"2024-01-05T12:26:35.534518565+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/listener_channel","Output":"?   \tgithub.com/jimmystewpot/traceroute/listener_channel\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534525739+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/listener_channel","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534533354+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods"}
-{"Time":"2024-01-05T12:26:35.534537552+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534542972+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534550166+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods/quic"}
-{"Time":"2024-01-05T12:26:35.534554093+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods/quic","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods/quic\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534558191+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods/quic","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534563201+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods/tcp"}
-{"Time":"2024-01-05T12:26:35.534566858+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods/tcp","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods/tcp\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534569984+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods/tcp","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.53457849+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods/udp"}
-{"Time":"2024-01-05T12:26:35.53458403+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods/udp","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods/udp\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534588188+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods/udp","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534590813+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/parallel_limiter"}
-{"Time":"2024-01-05T12:26:35.534602756+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/parallel_limiter","Output":"?   \tgithub.com/jimmystewpot/traceroute/parallel_limiter\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534608517+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/parallel_limiter","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534615861+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/service"}
-{"Time":"2024-01-05T12:26:35.534619608+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/service","Output":"?   \tgithub.com/jimmystewpot/traceroute/service\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534623616+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/service","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534628325+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/signal"}
-{"Time":"2024-01-05T12:26:35.534632363+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/signal","Output":"?   \tgithub.com/jimmystewpot/traceroute/signal\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534640037+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/signal","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534646199+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/taskgroup"}
-{"Time":"2024-01-05T12:26:35.534650387+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/taskgroup","Output":"?   \tgithub.com/jimmystewpot/traceroute/taskgroup\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534654004+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/taskgroup","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534658162+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/trace"}
-{"Time":"2024-01-05T12:26:35.534661809+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/trace","Output":"?   \tgithub.com/jimmystewpot/traceroute/trace\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534665185+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/trace","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.534671748+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/util"}
-{"Time":"2024-01-05T12:26:35.534675555+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/util","Output":"?   \tgithub.com/jimmystewpot/traceroute/util\t[no test files]\n"}
-{"Time":"2024-01-05T12:26:35.534679513+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/util","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.554057531+11:00","Action":"run","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues"}
-{"Time":"2024-01-05T12:26:35.554074143+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues","Output":"=== RUN   TestTraceConfigCheckandSetValues\n"}
-{"Time":"2024-01-05T12:26:35.55410914+11:00","Action":"run","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration"}
-{"Time":"2024-01-05T12:26:35.554113969+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration","Output":"=== RUN   TestTraceConfigCheckandSetValues/empty_configuration\n"}
-{"Time":"2024-01-05T12:26:35.554205213+11:00","Action":"run","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout"}
-{"Time":"2024-01-05T12:26:35.554212066+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout","Output":"=== RUN   TestTraceConfigCheckandSetValues/missing_timeout\n"}
-{"Time":"2024-01-05T12:26:35.554285596+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues","Output":"--- PASS: TestTraceConfigCheckandSetValues (0.00s)\n"}
-{"Time":"2024-01-05T12:26:35.554291908+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration","Output":"    --- PASS: TestTraceConfigCheckandSetValues/empty_configuration (0.00s)\n"}
-{"Time":"2024-01-05T12:26:35.554297349+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.554301286+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout","Output":"    --- PASS: TestTraceConfigCheckandSetValues/missing_timeout (0.00s)\n"}
-{"Time":"2024-01-05T12:26:35.554305364+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.55430821+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues","Elapsed":0}
-{"Time":"2024-01-05T12:26:35.554310925+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Output":"PASS\n"}
-{"Time":"2024-01-05T12:26:35.555239728+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Output":"coverage: 27.7% of statements\n"}
-{"Time":"2024-01-05T12:26:36.557564189+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Output":"ok  \tgithub.com/jimmystewpot/traceroute/config\t1.023s\tcoverage: 27.7% of statements\n"}
-{"Time":"2024-01-05T12:26:36.557593936+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Elapsed":1.023}
+{"Time":"2024-01-05T12:32:00.218578549+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute"}
+{"Time":"2024-01-05T12:32:00.218651037+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute","Output":"?   \tgithub.com/jimmystewpot/traceroute\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218672929+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218688349+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/config"}
+{"Time":"2024-01-05T12:32:00.218786686+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/listener_channel"}
+{"Time":"2024-01-05T12:32:00.218829808+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/listener_channel","Output":"?   \tgithub.com/jimmystewpot/traceroute/listener_channel\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218842733+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/listener_channel","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218858713+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods"}
+{"Time":"2024-01-05T12:32:00.218866809+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218875034+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218885404+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods/quic"}
+{"Time":"2024-01-05T12:32:00.218894762+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods/quic","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods/quic\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218905773+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods/quic","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218917625+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods/tcp"}
+{"Time":"2024-01-05T12:32:00.218925611+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods/tcp","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods/tcp\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218931923+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods/tcp","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218943164+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/methods/udp"}
+{"Time":"2024-01-05T12:32:00.218950338+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/methods/udp","Output":"?   \tgithub.com/jimmystewpot/traceroute/methods/udp\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218956509+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/methods/udp","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218967911+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/parallel_limiter"}
+{"Time":"2024-01-05T12:32:00.218975606+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/parallel_limiter","Output":"?   \tgithub.com/jimmystewpot/traceroute/parallel_limiter\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.218982579+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/parallel_limiter","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.218991516+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/service"}
+{"Time":"2024-01-05T12:32:00.21899901+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/service","Output":"?   \tgithub.com/jimmystewpot/traceroute/service\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.219005312+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/service","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.219013007+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/signal"}
+{"Time":"2024-01-05T12:32:00.21901966+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/signal","Output":"?   \tgithub.com/jimmystewpot/traceroute/signal\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.219043816+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/signal","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.219040269+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/taskgroup"}
+{"Time":"2024-01-05T12:32:00.219066158+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/taskgroup","Output":"?   \tgithub.com/jimmystewpot/traceroute/taskgroup\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.219073082+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/taskgroup","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.219083171+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/trace"}
+{"Time":"2024-01-05T12:32:00.219090004+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/trace","Output":"?   \tgithub.com/jimmystewpot/traceroute/trace\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.219096426+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/trace","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.219104501+11:00","Action":"start","Package":"github.com/jimmystewpot/traceroute/util"}
+{"Time":"2024-01-05T12:32:00.219110974+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/util","Output":"?   \tgithub.com/jimmystewpot/traceroute/util\t[no test files]\n"}
+{"Time":"2024-01-05T12:32:00.219120271+11:00","Action":"skip","Package":"github.com/jimmystewpot/traceroute/util","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.254035592+11:00","Action":"run","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues"}
+{"Time":"2024-01-05T12:32:00.254059848+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues","Output":"=== RUN   TestTraceConfigCheckandSetValues\n"}
+{"Time":"2024-01-05T12:32:00.254093883+11:00","Action":"run","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration"}
+{"Time":"2024-01-05T12:32:00.254101097+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration","Output":"=== RUN   TestTraceConfigCheckandSetValues/empty_configuration\n"}
+{"Time":"2024-01-05T12:32:00.254248919+11:00","Action":"run","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout"}
+{"Time":"2024-01-05T12:32:00.254256152+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout","Output":"=== RUN   TestTraceConfigCheckandSetValues/missing_timeout\n"}
+{"Time":"2024-01-05T12:32:00.254397902+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues","Output":"--- PASS: TestTraceConfigCheckandSetValues (0.00s)\n"}
+{"Time":"2024-01-05T12:32:00.254407441+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration","Output":"    --- PASS: TestTraceConfigCheckandSetValues/empty_configuration (0.00s)\n"}
+{"Time":"2024-01-05T12:32:00.254415145+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/empty_configuration","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.254421588+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout","Output":"    --- PASS: TestTraceConfigCheckandSetValues/missing_timeout (0.00s)\n"}
+{"Time":"2024-01-05T12:32:00.254429362+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues/missing_timeout","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.254434893+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Test":"TestTraceConfigCheckandSetValues","Elapsed":0}
+{"Time":"2024-01-05T12:32:00.254440413+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Output":"PASS\n"}
+{"Time":"2024-01-05T12:32:00.256136465+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Output":"coverage: 27.7% of statements\n"}
+{"Time":"2024-01-05T12:32:01.260158641+11:00","Action":"output","Package":"github.com/jimmystewpot/traceroute/config","Output":"ok  \tgithub.com/jimmystewpot/traceroute/config\t1.041s\tcoverage: 27.7% of statements\n"}
+{"Time":"2024-01-05T12:32:01.260190942+11:00","Action":"pass","Package":"github.com/jimmystewpot/traceroute/config","Elapsed":1.042}

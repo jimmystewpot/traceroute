@@ -1,6 +1,10 @@
 # Traceroute (Golang)
 
-**NOTE** This is an experimental fork that emits OpenTelemetry trace spans
+**NOTE** This is an **experimental** fork that emits OpenTelemetry trace spans
+
+## Fork
+
+This was forked from https://github.com/mgranderath/traceroute and then updated.
 
 
 This is an implementation of UDP (quic support) and TCP Traceroute in golang. 
