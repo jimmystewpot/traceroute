@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	tracerName string = "%s/traceroute"
+	tracerName      string = "%s/traceroute"
+	applicationName string = "github.com/jimmystewpot/traceroute"
 )
 
 type CLI struct {
@@ -229,12 +230,12 @@ func (cli *CLI) initBaggage(ctx context.Context) (context.Context, error) {
 
 // initTraceProvider is instantiated early and then run as the final function to export the trace.
 func (cli *CLI) initTraceProvider(timeout time.Duration) (func(), error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout*time.Second)
 
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(fmt.Sprintf("%s/traceroute", cli.Hostname)),
-			attribute.String("application", "github.com/jimmystewpot/traceroute"),
+			attribute.String("application", applicationName),
 		),
 	)
 	if err != nil {
@@ -247,7 +248,7 @@ func (cli *CLI) initTraceProvider(timeout time.Duration) (func(), error) {
 	switch cli.OpenTelemetryGRPC {
 	case true:
 		// GRPC Destination Configuration for the exporter
-		conn, gerr := grpc.DialContext(ctx, dst, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		conn, gerr := grpc.DialContext(ctx, dst, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUserAgent(applicationName))
 		if gerr != nil {
 			cancel()
 			return func() {}, err

@@ -25,7 +25,8 @@ test:
 	@echo ""
 	@echo "***** Testing ${TOOL} *****"
 ifdef INTERACTIVE
-	go test -a -v -race $(TEST_DIRS) 1
+	go test -a -v -race $(TEST_DIRS)
 else
 	go test -a -v -race -coverprofile=$(REPORTS_DIR)/coverage.txt -covermode=atomic -json $(TEST_DIRS) 1> $(REPORTS_DIR)/testreport.json
+endif
 	@echo ""
