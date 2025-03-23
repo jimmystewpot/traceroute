@@ -1,6 +1,6 @@
 module github.com/jimmystewpot/traceroute
 
-go 1.21
+go 1.24.1
 
 require (
 	github.com/alecthomas/kong v0.8.1
