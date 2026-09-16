@@ -458,7 +458,7 @@ fn create_tcp_stream_probe_socket(destination: IpAddr, ttl: u16) -> std::io::Res
     // Apply the time-to-live so intermediate routers emit ICMP Time Exceeded
     // when the TTL reaches zero.
     if destination.is_ipv4() {
-        socket.set_ttl(ttl as u32)?;
+        socket.set_ttl_v4(ttl as u32)?;
     } else {
         socket.set_unicast_hops_v6(ttl as u32)?;
     }
@@ -801,7 +801,7 @@ async fn probe_single_hop(
                         // Set the TTL on the transmit socket so that intermediate
                         // routers emit ICMP Time Exceeded when it reaches zero.
                         let ttl_set_ok = if dest.is_ipv4() {
-                            tx_socket.set_ttl(ttl as u32)
+                            tx_socket.set_ttl_v4(ttl as u32)
                         } else {
                             tx_socket.set_unicast_hops_v6(ttl as u32)
                         }

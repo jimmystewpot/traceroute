@@ -94,7 +94,7 @@ pub fn create_udp_probe_socket(destination: IpAddr, ttl: u16) -> std::io::Result
     let socket = Socket::new(domain, Type::DGRAM, Some(Protocol::UDP))?;
 
     if destination.is_ipv4() {
-        socket.set_ttl(ttl as u32)?;
+        socket.set_ttl_v4(ttl as u32)?;
     } else {
         socket.set_unicast_hops_v6(ttl as u32)?;
     }
