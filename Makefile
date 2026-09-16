@@ -1,32 +1,20 @@
 TOOL := "jimmystewpot/traceroute"
-INTERACTIVE := $(shell [ -t 0 ] && echo 1)
-TEST_DIRS := ./...
-REPORTS_DIR := ci
 
-test-all: deps lint test
+.PHONY: all build test lint fmt clean
 
-deps:
-	@echo ""
-	@echo "***** Installing dependencies for ${TOOL} *****"
-	go clean --cache
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+all: fmt lint test build
 
-lint: deps
-	@echo ""
-	@echo "***** linting ${TOOL} with golangci-lint *****"
-ifdef INTERACTIVE
-	golangci-lint run -v $(TEST_DIRS)
-else
-	golangci-lint run --out-format checkstyle -v $(TEST_DIRS) 1> $(REPORTS_DIR)/checkstyle-lint.xml
-endif
-.PHONY: lint
+fmt:
+	cargo fmt --check
+
+lint:
+	cargo clippy --all-targets -- -D warnings
 
 test:
-	@echo ""
-	@echo "***** Testing ${TOOL} *****"
-ifdef INTERACTIVE
-	go test -a -v -race $(TEST_DIRS)
-else
-	go test -a -v -race -coverprofile=$(REPORTS_DIR)/coverage.txt -covermode=atomic -json $(TEST_DIRS) 1> $(REPORTS_DIR)/testreport.json
-endif
-	@echo ""
+	cargo test --verbose
+
+build:
+	cargo build --release
+
+clean:
+	cargo clean

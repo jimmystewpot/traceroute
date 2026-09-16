@@ -1,2 +1,5 @@
 .idea
 .vscode
+.superpowers/
+docs/superpowers/
+target/
