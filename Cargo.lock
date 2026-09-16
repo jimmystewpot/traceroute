@@ -1292,7 +1292,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.5.10",
+ "socket2 0.6.5",
  "thiserror 2.0.20",
  "tokio",
  "tracing",
@@ -1330,9 +1330,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.5.10",
+ "socket2 0.6.5",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -2069,7 +2069,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yml",
- "socket2 0.5.10",
+ "socket2 0.6.5",
  "thiserror 1.0.69",
  "tokio",
  "tower 0.5.3",
