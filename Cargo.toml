@@ -6,26 +6,26 @@ description = "High-performance traceroute utility with OpenTelemetry distribute
 authors = ["Traceroute Maintainers"]
 
 [dependencies]
-tokio = { version = "1.40", features = ["full"] }
-socket2 = { version = "0.5", features = ["all"] }
-etherparse = "0.16"
-clap = { version = "4.5", features = ["derive", "env"] }
-serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.53.1", features = ["full"] }
+socket2 = { version = "0.6.5", features = ["all"] }
+etherparse = "0.21.0"
+clap = { version = "4.6.7", features = ["derive", "env"] }
+serde = { version = "1.0.229", features = ["derive"] }
 serde_yml = { git = "https://github.com/jimmystewpot/serde_yml" }
-serde_json = "1.0"
-axum = "0.7"
-opentelemetry = { version = "0.26", features = ["trace"] }
-opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.26", features = ["grpc-tonic", "http-proto", "reqwest-client", "tls-roots", "reqwest-rustls"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-thiserror = "1.0"
-anyhow = "1.0"
-rand = "0.8"
-uuid = { version = "1.10", features = ["v4"] }
-hostname = "0.4"
-humantime = "2.1"
-humantime-serde = "1.1"
+serde_json = "1.0.151"
+axum = "0.8.9"
+opentelemetry = { version = "0.32.0", features = ["trace"] }
+opentelemetry_sdk = { version = "0.32.1", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.32.0", features = ["grpc-tonic", "http-proto", "reqwest-client", "tls-roots", "reqwest-rustls"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+thiserror = "2.0.20"
+anyhow = "1.0.104"
+rand = "0.10.2"
+uuid = { version = "1.26.1", features = ["v4"] }
+hostname = "0.4.2"
+humantime = "2.4.0"
+humantime-serde = "1.1.1"
 libc = "0.2.189"
 
 [[bin]]
@@ -39,4 +39,4 @@ path = "src/lib.rs"
 [dev-dependencies]
 assert_cmd = "2.2.2"
 predicates = "3.1.4"
-tower = { version = "0.5", features = ["util"] }
+tower = { version = "0.5.3", features = ["util"] }
