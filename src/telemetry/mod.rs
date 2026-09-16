@@ -9,16 +9,13 @@ use opentelemetry::baggage::BaggageExt;
 use opentelemetry::trace::{Link, Span, Tracer};
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{
-    runtime,
-    trace::{BatchConfig, TracerProvider},
-};
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use std::net::IpAddr;
 use std::time::Duration;
 
 /// RAII guard ensuring tracer provider flushes and shuts down on drop.
 pub struct TelemetryGuard {
-    pub provider: TracerProvider,
+    pub provider: SdkTracerProvider,
 }
 
 impl Drop for TelemetryGuard {
@@ -30,11 +27,11 @@ impl Drop for TelemetryGuard {
 /// Initialises the OpenTelemetry OTLP tracer provider.
 ///
 /// Builds a gRPC (tonic) or HTTP (reqwest) OTLP exporter depending on `is_grpc`,
-/// then installs a batch span processor backed by the Tokio runtime.
+/// then installs a batch span processor.
 ///
 /// If the exporter or pipeline cannot be initialised — for example, because the
 /// collector endpoint is unreachable — a warning is emitted and the function falls
-/// back to a no-op `TracerProvider` that silently drops spans.  The fallback path
+/// back to a no-op `SdkTracerProvider` that silently drops spans. The fallback path
 /// always returns `Ok(TelemetryGuard)` so that callers treat OTLP failure as
 /// non-fatal.
 pub fn init_telemetry(
@@ -57,58 +54,50 @@ pub fn init_telemetry(
     Ok(TelemetryGuard { provider })
 }
 
-/// Builds a `TracerProvider` using the gRPC/tonic OTLP exporter.
+/// Builds a `SdkTracerProvider` using the gRPC/tonic OTLP exporter.
 ///
 /// Falls back to a no-op provider on any error, emitting a warning via `tracing`.
-fn build_grpc_provider(url: &str, timeout: Duration) -> TracerProvider {
-    let pipeline_result = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(url)
-                .with_timeout(timeout),
-        )
-        .with_batch_config(BatchConfig::default())
-        .install_batch(runtime::Tokio);
+fn build_grpc_provider(url: &str, timeout: Duration) -> SdkTracerProvider {
+    let exporter_res = opentelemetry_otlp::SpanExporter::builder()
+        .with_tonic()
+        .with_endpoint(url)
+        .with_timeout(timeout)
+        .build();
 
-    match pipeline_result {
-        Ok(provider) => provider,
+    match exporter_res {
+        Ok(exporter) => SdkTracerProvider::builder()
+            .with_batch_exporter(exporter)
+            .build(),
         Err(err) => {
             tracing::warn!(
-                "OTLP gRPC exporter pipeline failed to initialise ({}); \
-                 running without telemetry export",
+                "OTLP gRPC exporter failed to initialise ({}); running without telemetry export",
                 err
             );
-            TracerProvider::builder().build()
+            SdkTracerProvider::builder().build()
         }
     }
 }
 
-/// Builds a `TracerProvider` using the HTTP/reqwest OTLP exporter.
+/// Builds a `SdkTracerProvider` using the HTTP/reqwest OTLP exporter.
 ///
 /// Falls back to a no-op provider on any error, emitting a warning via `tracing`.
-fn build_http_provider(url: &str, timeout: Duration) -> TracerProvider {
-    let pipeline_result = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .http()
-                .with_endpoint(url)
-                .with_timeout(timeout),
-        )
-        .with_batch_config(BatchConfig::default())
-        .install_batch(runtime::Tokio);
+fn build_http_provider(url: &str, timeout: Duration) -> SdkTracerProvider {
+    let exporter_res = opentelemetry_otlp::SpanExporter::builder()
+        .with_http()
+        .with_endpoint(url)
+        .with_timeout(timeout)
+        .build();
 
-    match pipeline_result {
-        Ok(provider) => provider,
+    match exporter_res {
+        Ok(exporter) => SdkTracerProvider::builder()
+            .with_batch_exporter(exporter)
+            .build(),
         Err(err) => {
             tracing::warn!(
-                "OTLP HTTP exporter pipeline failed to initialise ({}); \
-                 running without telemetry export",
+                "OTLP HTTP exporter failed to initialise ({}); running without telemetry export",
                 err
             );
-            TracerProvider::builder().build()
+            SdkTracerProvider::builder().build()
         }
     }
 }
