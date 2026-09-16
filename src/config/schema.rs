@@ -31,7 +31,7 @@ pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(5);
 pub enum ConfigError {
     /// Failure during YAML parsing or deserialisation.
     #[error("failed to parse YAML: {0}")]
-    Yaml(#[from] serde_yaml::Error),
+    Yaml(#[from] serde_yml::Error),
 
     /// The configuration specifies an unsupported schema version.
     #[error("unknown or unsupported schema version: {0}")]

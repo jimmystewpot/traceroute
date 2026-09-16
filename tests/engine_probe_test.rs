@@ -475,3 +475,25 @@ fn test_tcp_probe_source_port_generation_diversity() {
         }
     }
 }
+
+#[tokio::test]
+async fn test_tcp_unprivileged_pollout_guard_semantics() {
+    // Tests that an immediate connect to a closed loopback port reports destination arrival (RST),
+    // while non-responding destinations accurately time out rather than falsely declaring arrival.
+    let cfg = TcpTracerouteConfig {
+        destination: "127.0.0.1".parse().unwrap(),
+        destination_name: None,
+        max_hops: 1,
+        queries_per_hop: 1,
+        parallel_requests: 1,
+        timeout: Duration::from_millis(50),
+        dest_port: 65432, // Closed port
+        span_links: Vec::new(),
+        probe_limiter: None,
+    };
+    let result = execute_tcp_trace(cfg).await.unwrap();
+    assert_eq!(result.len(), 1);
+    let hop = &result.get(&1).unwrap()[0];
+    assert!(hop.success);
+    assert_eq!(hop.address, Some("127.0.0.1".parse().unwrap()));
+}

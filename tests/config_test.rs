@@ -93,7 +93,7 @@ healthcheck:
 #[test]
 fn test_generate_sample_config_roundtrip() {
     let sample = generate_sample_config().expect("generate sample config");
-    assert!(sample.contains("schema-version: 1.0.0"));
+    assert!(sample.contains("schema-version: '1.0.0'") || sample.contains("schema-version: 1.0.0"));
     let parsed = load_config_from_str(&sample).expect("parse generated sample config");
     assert_eq!(parsed.schema_version, "1.0.0");
     assert_eq!(

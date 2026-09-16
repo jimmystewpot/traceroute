@@ -3,6 +3,7 @@
 //! Designed and documented following Australian English conventions.
 
 use assert_cmd::Command;
+use predicates::prelude::PredicateBooleanExt;
 use std::io::Write;
 
 #[test]
@@ -11,7 +12,10 @@ fn test_cli_generate_command_outputs_yaml() {
     let assert = cmd.arg("generate").assert();
     assert
         .success()
-        .stdout(predicates::str::contains("schema-version: 1.0.0"))
+        .stdout(
+            predicates::str::contains("schema-version: '1.0.0'")
+                .or(predicates::str::contains("schema-version: 1.0.0")),
+        )
         .stdout(predicates::str::contains("first-test-domain.org"))
         .stdout(predicates::str::contains("protocol: tcp"))
         .stdout(predicates::str::contains("opentelemetry:"))

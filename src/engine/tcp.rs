@@ -578,10 +578,9 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
     let poll_start = Instant::now();
     while poll_start.elapsed() < timeout {
         let remaining = timeout.saturating_sub(poll_start.elapsed());
-        let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as libc::c_int;
 
         #[cfg(unix)]
-        {
+        let is_writable = {
             use std::os::unix::io::AsRawFd;
             let fd = socket.as_raw_fd();
             let mut pfd = libc::pollfd {
@@ -589,6 +588,7 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
                 events: libc::POLLOUT | libc::POLLIN | libc::POLLPRI,
                 revents: 0,
             };
+            let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as libc::c_int;
 
             // SAFETY: pfd is a valid stack-allocated pollfd referencing our active socket descriptor.
             let ret = unsafe { libc::poll(&mut pfd, 1, timeout_ms) };
@@ -604,12 +604,13 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
                 // Poll timeout elapsed without events.
                 break;
             }
-        }
+            pfd.revents & libc::POLLOUT != 0
+        };
         #[cfg(not(unix))]
-        {
+        let is_writable: bool = {
             std::thread::sleep(remaining);
             break;
-        }
+        };
 
         // Check if an ICMP error arrived via the socket error queue.
         if let Some((router_or_dest_ip, icmp_type, icmp_code)) = recv_from_errqueue(&socket) {
@@ -644,73 +645,75 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
             }
         }
 
-        // Inspect socket error status via take_error to detect completed handshake or RST.
-        match socket.take_error() {
-            Ok(None) => {
-                // Connection established successfully — destination reached.
-                return TracerouteHop {
-                    success: true,
-                    address: Some(dest),
-                    ttl,
-                    rtt: Some(start.elapsed()),
-                };
-            }
-            Ok(Some(err))
-                if err.raw_os_error() == Some(libc::ECONNREFUSED)
-                    || err.raw_os_error() == Some(libc::ECONNRESET) =>
-            {
-                // Destination replied with RST (port closed) — destination reached.
-                return TracerouteHop {
-                    success: true,
-                    address: Some(dest),
-                    ttl,
-                    rtt: Some(start.elapsed()),
-                };
-            }
-            Ok(Some(err)) => {
-                tracing::debug!(ttl, "TCP socket error after poll: {}", err);
-                // Check error queue one more time before terminating.
-                if let Some((router_or_dest_ip, icmp_type, icmp_code)) = recv_from_errqueue(&socket)
+        // Only inspect socket error status if the socket became writable (POLLOUT).
+        // A non-blocking connect in progress has SO_ERROR == 0 before completion;
+        // checking take_error without POLLOUT risks false-positive connection detection.
+        if is_writable {
+            match socket.take_error() {
+                Ok(None) => {
+                    // Connection established successfully — destination reached.
+                    return TracerouteHop {
+                        success: true,
+                        address: Some(dest),
+                        ttl,
+                        rtt: Some(start.elapsed()),
+                    };
+                }
+                Ok(Some(err))
+                    if err.raw_os_error() == Some(libc::ECONNREFUSED)
+                        || err.raw_os_error() == Some(libc::ECONNRESET) =>
                 {
-                    if icmp_type == time_exceeded_type {
-                        return TracerouteHop {
-                            success: true,
-                            address: Some(router_or_dest_ip),
-                            ttl,
-                            rtt: Some(start.elapsed()),
-                        };
-                    } else if icmp_type == dest_unreach_type {
-                        // Both conditions must hold: offender IP matches destination AND
-                        // the ICMP code is Port Unreachable (IPv4 = 3, IPv6 = 4).
-                        let is_port_unreachable = (dest.is_ipv4() && icmp_code == 3)
-                            || (dest.is_ipv6() && icmp_code == 4);
-                        if router_or_dest_ip == dest && is_port_unreachable {
-                            return TracerouteHop {
-                                success: true,
-                                address: Some(dest),
-                                ttl,
-                                rtt: Some(start.elapsed()),
-                            };
-                        } else {
-                            // Intermediate router returning unreachable — report actual offender IP.
+                    // Destination replied with RST (port closed) — destination reached.
+                    return TracerouteHop {
+                        success: true,
+                        address: Some(dest),
+                        ttl,
+                        rtt: Some(start.elapsed()),
+                    };
+                }
+                Ok(Some(err)) => {
+                    tracing::debug!(ttl, "TCP socket error after poll: {}", err);
+                    // Check error queue one more time before terminating.
+                    if let Some((router_or_dest_ip, icmp_type, icmp_code)) =
+                        recv_from_errqueue(&socket)
+                    {
+                        if icmp_type == time_exceeded_type {
                             return TracerouteHop {
                                 success: true,
                                 address: Some(router_or_dest_ip),
                                 ttl,
                                 rtt: Some(start.elapsed()),
                             };
+                        } else if icmp_type == dest_unreach_type {
+                            let is_port_unreachable = (dest.is_ipv4() && icmp_code == 3)
+                                || (dest.is_ipv6() && icmp_code == 4);
+                            if router_or_dest_ip == dest && is_port_unreachable {
+                                return TracerouteHop {
+                                    success: true,
+                                    address: Some(dest),
+                                    ttl,
+                                    rtt: Some(start.elapsed()),
+                                };
+                            } else {
+                                return TracerouteHop {
+                                    success: true,
+                                    address: Some(router_or_dest_ip),
+                                    ttl,
+                                    rtt: Some(start.elapsed()),
+                                };
+                            }
                         }
                     }
+                    break;
                 }
-                break;
-            }
-            Err(err) => {
-                tracing::debug!(
-                    ttl,
-                    "Failed to retrieve socket error via take_error: {}",
-                    err
-                );
-                break;
+                Err(err) => {
+                    tracing::debug!(
+                        ttl,
+                        "Failed to retrieve socket error via take_error: {}",
+                        err
+                    );
+                    break;
+                }
             }
         }
     }
@@ -870,8 +873,6 @@ async fn probe_single_hop(
         //   b) Raw ICMP socket creation failed.
         //   c) The destination is IPv6 (raw IPv6 packet building is not
         //      implemented in this engine).
-        //   d) The privileged probe timed out or the reply could not be
-        //      correlated to our SYN (sequence number mismatch).
         probe_unprivileged(dest, dest_port, ttl, timeout)
     })
     .await;

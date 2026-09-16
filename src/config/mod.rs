@@ -15,7 +15,7 @@ pub use schema::{
 /// `schema-version` matches [`CURRENT_SCHEMA_VERSION`], and that semantic
 /// validation constraints are met.
 pub fn load_config_from_str(s: &str) -> Result<TraceConfig, ConfigError> {
-    let config: TraceConfig = serde_yaml::from_str(s)?;
+    let config: TraceConfig = serde_yml::from_str(s)?;
     if config.schema_version != CURRENT_SCHEMA_VERSION {
         return Err(ConfigError::UnsupportedSchema(config.schema_version));
     }
@@ -94,5 +94,5 @@ pub fn generate_sample_config() -> Result<String, ConfigError> {
             port: 8080,
         },
     };
-    Ok(serde_yaml::to_string(&sample)?)
+    Ok(serde_yml::to_string(&sample)?)
 }
