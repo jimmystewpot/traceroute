@@ -578,10 +578,9 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
     let poll_start = Instant::now();
     while poll_start.elapsed() < timeout {
         let remaining = timeout.saturating_sub(poll_start.elapsed());
-        let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as libc::c_int;
 
         #[cfg(unix)]
-        let pfd = {
+        let is_writable = {
             use std::os::unix::io::AsRawFd;
             let fd = socket.as_raw_fd();
             let mut pfd = libc::pollfd {
@@ -589,6 +588,7 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
                 events: libc::POLLOUT | libc::POLLIN | libc::POLLPRI,
                 revents: 0,
             };
+            let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as libc::c_int;
 
             // SAFETY: pfd is a valid stack-allocated pollfd referencing our active socket descriptor.
             let ret = unsafe { libc::poll(&mut pfd, 1, timeout_ms) };
@@ -604,10 +604,10 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
                 // Poll timeout elapsed without events.
                 break;
             }
-            pfd
+            pfd.revents & libc::POLLOUT != 0
         };
         #[cfg(not(unix))]
-        let pfd = {
+        let is_writable: bool = {
             std::thread::sleep(remaining);
             break;
         };
@@ -648,7 +648,7 @@ fn probe_unprivileged(dest: IpAddr, dest_port: u16, ttl: u16, timeout: Duration)
         // Only inspect socket error status if the socket became writable (POLLOUT).
         // A non-blocking connect in progress has SO_ERROR == 0 before completion;
         // checking take_error without POLLOUT risks false-positive connection detection.
-        if pfd.revents & libc::POLLOUT != 0 {
+        if is_writable {
             match socket.take_error() {
                 Ok(None) => {
                     // Connection established successfully — destination reached.
