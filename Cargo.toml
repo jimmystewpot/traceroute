@@ -8,7 +8,7 @@ authors = ["Traceroute Maintainers"]
 [dependencies]
 tokio = { version = "1.40", features = ["full"] }
 socket2 = { version = "0.5", features = ["all"] }
-etherparse = "0.16"
+etherparse = "0.21"
 clap = { version = "4.5", features = ["derive", "env"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yml = { git = "https://github.com/jimmystewpot/serde_yml" }
