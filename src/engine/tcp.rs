@@ -873,8 +873,6 @@ async fn probe_single_hop(
         //   b) Raw ICMP socket creation failed.
         //   c) The destination is IPv6 (raw IPv6 packet building is not
         //      implemented in this engine).
-        //   d) The privileged probe timed out or the reply could not be
-        //      correlated to our SYN (sequence number mismatch).
         probe_unprivileged(dest, dest_port, ttl, timeout)
     })
     .await;
