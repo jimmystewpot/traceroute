@@ -19,7 +19,7 @@ opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "0.26", features = ["grpc-tonic", "http-proto", "reqwest-client", "tls-roots", "reqwest-rustls"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-thiserror = "1.0"
+thiserror = "2.0"
 anyhow = "1.0"
 rand = "0.8"
 uuid = { version = "1.10", features = ["v4"] }
