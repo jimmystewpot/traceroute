@@ -11,7 +11,7 @@ on:
 jobs:
   analyze:
     name: Analyze (rust)
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-traceroute
     permissions:
       actions: read
       contents: read
