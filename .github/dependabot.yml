@@ -5,3 +5,67 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      opentelemetry:
+        applies-to: version-updates
+        patterns:
+          - "opentelemetry"
+          - "opentelemetry_*"
+          - "opentelemetry-*"
+          - "tracing-opentelemetry"
+      tracing:
+        applies-to: version-updates
+        patterns:
+          - "tracing"
+          - "tracing-*"
+        exclude-patterns:
+          - "tracing-opentelemetry"
+      axum-tower:
+        applies-to: version-updates
+        patterns:
+          - "axum"
+          - "axum-*"
+          - "tower"
+          - "tower-*"
+      serde:
+        applies-to: version-updates
+        patterns:
+          - "serde"
+          - "serde_*"
+          - "serde-*"
+      humantime:
+        applies-to: version-updates
+        patterns:
+          - "humantime"
+          - "humantime-*"
+      cli-testing:
+        applies-to: version-updates
+        patterns:
+          - "assert_cmd"
+          - "predicates"
+          - "predicates-*"
+      rust-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "opentelemetry"
+          - "opentelemetry_*"
+          - "opentelemetry-*"
+          - "tracing"
+          - "tracing-*"
+          - "axum"
+          - "axum-*"
+          - "tower"
+          - "tower-*"
+          - "serde"
+          - "serde_*"
+          - "serde-*"
+          - "humantime"
+          - "humantime-*"
+          - "assert_cmd"
+          - "predicates"
+          - "predicates-*"
+        update-types:
+          - "minor"
+          - "patch"
